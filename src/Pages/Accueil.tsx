@@ -2,7 +2,10 @@ import React, { useState, useEffect, DragEvent, ChangeEvent } from 'react';
 import '../Styles/Accueil.css';
 import pointsData from '../Test/Points.json'; // Importation du fichier Points.json
 import Carte from './Carte.tsx'; // Importation du composant Carte
-import { Point } from '../Utils/points';  // Importation de l'interface Point
+import {Intersection, Point} from '../Utils/points';
+import {Button} from "@mui/material";
+import {charger_carte} from "../Appels_api/chargerCarte.ts";
+import toast, {Toaster} from "react-hot-toast";  // Importation de l'interface Point
 
 interface XmlFile {
     name: string;
@@ -16,27 +19,67 @@ export default function Accueil() {
     const [message, setMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [points, setPoints] = useState<Point[]>([]); // Stockage des points
+    const [intersections, setIntersections] = useState<Intersection[]>([]); // Stockage des intersections
 
-    // Utilisation du hook useEffect pour charger les points immédiatement
-    useEffect(() => {
-        loadPoints();
-    }, []);  // Le tableau vide [] signifie que l'effet ne sera exécuté qu'une seule fois au montage du composant
+    
+    
+    const  ajouteLesPointsSurLaCarte = (nouveauPoints: Blob) => {
+        
 
-    // Fonction pour charger les points depuis le fichier JSON
-    const loadPoints = () => {
+    }
+    
+    // Fonction pour ajouter les points sur la carte
+    const loadPoints = (donnees: Blob) => {
         try {
             // Extraction des points depuis le fichier JSON
-            const extractedPoints: Point[] = pointsData.points.point.map((point: any) => ({
+            const nouvellesIntersections: Intersection[] = donnees.intersections.map((point: any) => ({
                 id: point.id,
-                long: point.long,
-                lat: point.lat,
+                latitude: point.latitude,
+                longitude: point.longitude,
+                voisins: point.voisins.map((voisin: any) => ({
+                    nomRue: voisin.nomRue,
+                    longueur: voisin.longueur,
+                })),
             }));
-            setPoints(extractedPoints);
-            setMessage('Points chargés avec succès');
+            setIntersections(nouvellesIntersections);
+            console.log("nouvellesIntersections", nouvellesIntersections);
+            //rempli les points maintenant : 
+            const nouveauPoints: Point[] = nouvellesIntersections.map(
+                (intersection: Intersection) => ({
+                    id: intersection.id,
+                    lat: intersection.latitude,
+                    long: intersection.longitude,
+                })
+            );
+            setPoints(nouveauPoints);
+            console.log("nouveauPoints", nouveauPoints);
+            
+            
+            
+            
         } catch (error) {
             setErrorMessage('Erreur lors du chargement des points depuis le fichier JSON');
         }
+
+    }
+    
+    const testChargementFichierXML = () => {
+        charger_carte("petitPlan.xml")
+            .then((response) => {
+                // Traiter les données de la réponse ici
+                const { message, data } = response;
+                console.log(data);
+                loadPoints(data)
+                // ajouteLesPointsSurLaCarte(data);
+                toast.success(message);
+                
+                
+                
+               
+            })
+            .catch((error) => console.error(error));
     };
+    
 
     // Fonction pour lire le fichier XML (inchangée)
     const handleFileRead = (file: File, isCarte: boolean = false) => {
@@ -81,6 +124,7 @@ export default function Accueil() {
 
     return (
         <div>
+            <Toaster/>
             <h1>Gestion des livraisons</h1>
 
             {/* Charger le plan XML */}
@@ -109,6 +153,8 @@ export default function Accueil() {
 
             {/* Affichage de la carte avec les points */}
             {points.length > 0 && <Carte points={points} />}
+            
+            <Button variant="contained" color="primary" onClick={testChargementFichierXML}>Charger</Button>
         </div>
     );
 }
