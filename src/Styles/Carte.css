@@ -1,0 +1,14 @@
+/* Style général pour le conteneur de la carte */
+.map-container {
+    height: 400px;
+    width: 100%;
+}
+
+/* Style personnalisé pour l'icône MUI du marqueur */
+.mui-marker-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: red; /* Couleur de l'icône MUI */
+    font-size: 36px; /* Taille de l'icône MUI */
+}

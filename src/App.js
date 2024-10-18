@@ -8,7 +8,6 @@ import {
 
 import Accueil from "./Pages/Accueil.tsx";
 import Carte from "./Pages/Carte.tsx";
-import AffichageXml from "./Pages/XML.tsx";
 
 
 const theme = createTheme();
@@ -20,7 +19,8 @@ function App() {
           <Routes>
             <Route exact path="/accueil" element={<Accueil />} />
             <Route exact path="/carte" element={<Carte />} />
-            <Route exact path="/calculer-itineraire" element={<AffichageXml />} />
+            <Route exact path="/valider-carte" element={<Accueil />} />
+            <Route exact path="/valider-demande" element={<Accueil />} />
           </Routes>
         </BrowserRouter>
       </ThemeProvider>
