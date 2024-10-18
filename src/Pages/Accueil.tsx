@@ -1,9 +1,9 @@
 import React, { useState, useEffect, DragEvent, ChangeEvent } from 'react';
 import '../Styles/Accueil.css';
-import pointsData from '../Test/Points.json'; // Importation du fichier Points.json
+import LeftDrawer from './LeftDrawer.tsx'; // Importation du composant LeftDrawer
 import Carte from './Carte.tsx'; // Importation du composant Carte
 import {Intersection, Point} from '../Utils/points';
-import {Button} from "@mui/material";
+import {Box, Button} from "@mui/material";
 import {charger_carte} from "../Appels_api/chargerCarte.ts";
 import toast, {Toaster} from "react-hot-toast";  // Importation de l'interface Point
 
@@ -123,38 +123,45 @@ export default function Accueil() {
     };
 
     return (
-        <div>
+        <Box sx = {{display : "flex", flexDirection : "row", witdh : '100%', height : '100%', justifyContent: "center"}}>
             <Toaster/>
-            <h1>Gestion des livraisons</h1>
+            <LeftDrawer selected="Accueil" />
+            <Box sx = {{display : "flex", flexDirection : "column", witdh : '100%', gap : "5dvh"}}>
+                <Box>
+                    <h1>Gestion des livraisons</h1>
 
-            {/* Charger le plan XML */}
-            <h2>Charger une carte XML</h2>
-            <div
-                onDrop={(event) => handleFileDrop(event, true)}
-                onDragOver={handleDragOver}
-                className="dropzone"
-            >
-                <p>Glissez et déposez votre fichier carte ici</p>
-            </div>
-            <input
-                type="file"
-                accept=".xml"
-                onChange={(event) => handleFileSelect(event, true)}
-            />
-            {xmlCarte && (
-                <div>
-                    <p>Fichier de carte chargé: {xmlCarte.name}</p>
+                    {/* Charger le plan XML */}
+                    <h2>Charger une carte XML</h2>
+                </Box>
+
+                <div
+                    onDrop={(event) => handleFileDrop(event, true)}
+                    onDragOver={handleDragOver}
+                    className="dropzone"
+                >
+                    <p>Glissez et déposez votre fichier carte ici</p>
                 </div>
-            )}
+                <input
+                    type="file"
+                    accept=".xml"
+                    onChange={(event) => handleFileSelect(event, true)}
+                />
+                {xmlCarte && (
+                    <div>
+                        <p>Fichier de carte chargé: {xmlCarte.name}</p>
+                    </div>
+                )}
 
-            {/* Affichage des messages */}
-            {message && <p className="success-message">{message}</p>}
-            {errorMessage && <p className="error-message">{errorMessage}</p>}
+                {/* Affichage des messages */}
+                {message && <p className="success-message">{message}</p>}
+                {errorMessage && <p className="error-message">{errorMessage}</p>}
 
-            {/* Affichage de la carte avec les points */}
-            {points.length > 0 && <Carte points={points} />}
-            
-            <Button variant="contained" color="primary" onClick={testChargementFichierXML}>Charger</Button>
-        </div>
+                {/* Affichage de la carte avec les points */}
+                {points.length > 0 && <Carte points={points}/>}
+
+                <Button variant="contained" color="primary" onClick={testChargementFichierXML}>Charger</Button>
+            </Box>
+
+        </Box>
     );
 }

@@ -11,11 +11,11 @@ interface CarteProps {
 
 const customIcon = new L.Icon({
     iconUrl: require('../img/marker.png'),  // Correctly use the imported icon
-    iconSize: [25, 35], // taille de l'icône
+    iconSize: [25, 25], // taille de l'icône
     iconAnchor: [12, 41], // point d'ancrage de l'icône
     popupAnchor: [1, -34], // point d'ancrage du popup
     shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
-    shadowSize: [41, 41], // taille de l'ombre
+    shadowSize: [20, 20 ], // taille de l'ombre
 });
 
 const Carte: React.FC<CarteProps> = ({ points }) => {
