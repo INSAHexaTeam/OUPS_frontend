@@ -21,14 +21,16 @@ const customIcon = new L.Icon({
 
 
 //TODO : donner le setter de la liste des points et ajouter les points dans ajouterBouton
-const Carte: React.FC<CarteProps> = ({ points }) => {
+const Carte: React.FC<CarteProps> = ({ intersections , adressesLivraisonsAjoutees, setAdresseLivraisons }) => {
     // Si des points sont disponibles, utiliser le premier point pour la position par défaut
-    const defaultPosition: [number, number] = points.length > 0 ? [points[0].lat, points[0].long] : [45.75, 4.85];
+    const defaultPosition: [number, number] = intersections.length > 0 ? [intersections[0].latitude, intersections[0].longitude] : [45.75, 4.85];
 
 
-    const ajouterBouton = (id: number) => {
+    const ajouterBouton = (id: number, adresse : string) => {
         // Fonction pour ajouter un bouton
         console.log("Ajout du point : ", id);
+        setAdresseLivraisons([...adressesLivraisonsAjoutees, {id : id, adresse : adresse}]);
+        console.log("ajouté : ",adressesLivraisonsAjoutees)
     };
     
     return (
@@ -37,11 +39,13 @@ const Carte: React.FC<CarteProps> = ({ points }) => {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             {/* Affichage des marqueurs pour chaque point */}
-            {points.map(point => (
-                <Marker key={point.id} position={[point.lat, point.long]} icon={customIcon}>
+            {intersections.map(intersection => (
+                <Marker key={intersection.id} position={[intersection.latitude, intersection.longitude]} icon={customIcon}>
                     <Popup>
-                        <span>{`Point ID: ${point.id}`}</span>
-                        <Button onClick={() => ajouterBouton(point.id)}>Ajouter</Button>
+                        <span>{`intersection ID: ${intersection.id}
+                        adresse : ${intersection.adresse}
+                        `}</span>
+                        <Button onClick={() => ajouterBouton(intersection.id, intersection.adresse)}>Ajouter</Button>
                     </Popup>
                 </Marker>
             ))}

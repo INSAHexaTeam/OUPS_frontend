@@ -17,8 +17,7 @@ export default function ListeRequetesLivraisonAjoutManuel({
                                                               pointDeRetrait,
                                                               setPointDeRetrait
                                                           }: ListeRequetesLivraisonAjoutManuelProps) {
-
-    const [rows, setRows] = React.useState<Intersection[]>([]);
+    
     // Fonction pour supprimer une livraison
     const handleSupprimerLivraison = (id: number) => () => {
         const newAdressesLivraisons = adressesLivraisonsAjoutees.filter((livraison) => livraison.id !== id);
@@ -26,21 +25,16 @@ export default function ListeRequetesLivraisonAjoutManuel({
     };
 
     // Define rows with pointDeRetrait first
-    useEffect(() => {
-        console.log("add :",pointDeRetrait);
-        let rawRows = [];
-        if (pointDeRetrait !== null) {
-            rawRows = [
-                {
-                    ...pointDeRetrait,
-                    adresse: pointDeRetrait.voisins.length > 0 ? pointDeRetrait.voisins[0].nomRue : 'adresse',
-                    isRetrait: true
-                },
-                ...adressesLivraisonsAjoutees.map(livraison => ({...livraison, isRetrait: false}))
-            ];
-        }
-        setRows(rows);
-    }, []);
+    // Define rows with pointDeRetrait first
+    let rows = [];
+    if (adressesLivraisonsAjoutees !== null && adressesLivraisonsAjoutees.length > 0) {
+        rows = adressesLivraisonsAjoutees.map(livraison => ({
+            ...livraison,
+            isRetrait: false
+        }));
+    }
+
+
 
     const columns: GridColDef[] = [
         { field: 'id', headerName: 'ID', width: 90 },

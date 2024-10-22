@@ -30,6 +30,11 @@ export default function Accueil() {
     // Correspond à la liste COMPLETE des adresses de livraison (ajoutées à la main + celles du fichier XML)
     const [listesTotalAdressesLivraisons, setListesTotalAdressesLivraisons] = useState<Intersection[]>([]);
     const [pointDeRetrait, setPointDeRetrait] = useState<Intersection | null>(null);
+
+    //concataine les 2 lites lors de la mise à jour des listes
+    useEffect(() => {
+        setListesTotalAdressesLivraisons([...adressesLivraisonsAjoutees, ...adressesLivraisonsXml]);
+    }, [adressesLivraisonsAjoutees,adressesLivraisonsXml]);
     
     
     // Fonction pour ajouter les points sur la carte
@@ -40,6 +45,7 @@ export default function Accueil() {
                 id: point.id,
                 latitude: point.latitude,
                 longitude: point.longitude,
+                adresse : point.voisins.length > 0 ? point.voisins[0].nomRue : 'pas définie',
                 voisins: point.voisins.map((voisin: any) => ({
                     nomRue: voisin.nomRue,
                     longueur: voisin.longueur,
@@ -119,6 +125,18 @@ export default function Accueil() {
     const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
         event.preventDefault();
     };
+    
+    const calculTournee = () => {
+        if(listesTotalAdressesLivraisons.length === 0){
+            toast.error("Veuillez ajouter des adresses de livraison")
+            return
+        }
+        else{
+            console.log("Liste des adresses de livraison ajoutées à la main : ", listesTotalAdressesLivraisons)
+            //appel api qui envoi toutes les adresses de livraison au back 
+        }
+        
+    }
 
     return (
         <Box sx = {{display : "flex", flexDirection : "row", witdh : '100%', height : '100%', justifyContent: "center"}}>
@@ -153,7 +171,7 @@ export default function Accueil() {
                 
                 {message && <p className="success-message">{message}</p>}
                 {errorMessage && <p className="error-message">{errorMessage}</p>}
-                {points.length > 0 && <Carte points={points}/>}
+                {points.length > 0 && <Carte intersections={intersections} setAdresseLivraisons={setAdresseLivraisons} adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}/>}
 
                 <Button variant="contained" color="primary" onClick={testChargementFichierXML}>Charger</Button>
                 { points.length > 0 && <ListeRequetesLivraisonAjoutManuel
@@ -162,6 +180,8 @@ export default function Accueil() {
                     pointDeRetrait={pointDeRetrait}
                     setPointDeRetrait={setPointDeRetrait}
                 />}
+                
+                <Button  variant="contained" color="primary" onClick={calculTournee}>Calculer la tournée </Button>
             </Box>
 
         </Box>
