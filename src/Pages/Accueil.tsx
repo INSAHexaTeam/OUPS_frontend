@@ -84,7 +84,7 @@ export default function Accueil() {
                 if (e.target && typeof e.target.result === 'string') {
                     if (isCarte) {
                         setXmlCarte({ name: file.name, content: e.target.result, file });
-                        enregistrerCarte("CHARGEMENT", file);
+                        enregistrerCarte("ENREGISTREMENT", file);
                     } else {
                         setXmlDemande({ name: file.name, content: e.target.result, file });
                     }
@@ -104,7 +104,7 @@ export default function Accueil() {
     const handleFileSelect = (event: ChangeEvent<HTMLInputElement>, isCarte: boolean = false) => {
         const file = event.target.files?.[0];
         if (file) {
-            enregistrerCarte("CHARGEMENT", file);
+            enregistrerCarte("ENREGISTREMENT", file);
             //handleFileRead(file, isCarte);
         }
     };
@@ -112,7 +112,8 @@ export default function Accueil() {
     const handleFileDrop = (event: DragEvent<HTMLDivElement>, isCarte: boolean = false) => {
         event.preventDefault();
         const file = event.dataTransfer.files[0];
-        handleFileRead(file, isCarte);
+        //handleFileRead(file, isCarte);
+        enregistrerCarte("ENREGISTREMENT", file);
     };
 
     const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
