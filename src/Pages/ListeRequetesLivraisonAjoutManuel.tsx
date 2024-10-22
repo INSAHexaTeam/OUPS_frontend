@@ -1,5 +1,5 @@
 import {Intersection} from "../Utils/points";
-import React from "react";
+import React, {useEffect} from "react";
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import {Box} from "@mui/material";
 import {DataGrid, GridActionsCellItem, GridColDef} from "@mui/x-data-grid";
@@ -18,6 +18,7 @@ export default function ListeRequetesLivraisonAjoutManuel({
                                                               setPointDeRetrait
                                                           }: ListeRequetesLivraisonAjoutManuelProps) {
 
+    const [rows, setRows] = React.useState<Intersection[]>([]);
     // Fonction pour supprimer une livraison
     const handleSupprimerLivraison = (id: number) => () => {
         const newAdressesLivraisons = adressesLivraisonsAjoutees.filter((livraison) => livraison.id !== id);
@@ -25,10 +26,21 @@ export default function ListeRequetesLivraisonAjoutManuel({
     };
 
     // Define rows with pointDeRetrait first
-    const rows = [
-        { ...pointDeRetrait, adresse: pointDeRetrait.voisins.length > 0 ? pointDeRetrait.voisins[0].nomRue : 'adresse', isRetrait: true },
-        ...adressesLivraisonsAjoutees.map(livraison => ({ ...livraison, isRetrait: false }))
-    ];
+    useEffect(() => {
+        console.log("add :",pointDeRetrait);
+        let rawRows = [];
+        if (pointDeRetrait !== null) {
+            rawRows = [
+                {
+                    ...pointDeRetrait,
+                    adresse: pointDeRetrait.voisins.length > 0 ? pointDeRetrait.voisins[0].nomRue : 'adresse',
+                    isRetrait: true
+                },
+                ...adressesLivraisonsAjoutees.map(livraison => ({...livraison, isRetrait: false}))
+            ];
+        }
+        setRows(rows);
+    }, []);
 
     const columns: GridColDef[] = [
         { field: 'id', headerName: 'ID', width: 90 },

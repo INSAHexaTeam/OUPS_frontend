@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Point } from '../Utils/points';  // Importation de l'interface Point
 import L from 'leaflet';
+import { Button } from '@mui/material';
 
 interface CarteProps {
     points: Point[];  // Typage des points reçus en props
@@ -17,10 +18,19 @@ const customIcon = new L.Icon({
     shadowSize: [20, 20 ], // taille de l'ombre
 });
 
+
+
+//TODO : donner le setter de la liste des points et ajouter les points dans ajouterBouton
 const Carte: React.FC<CarteProps> = ({ points }) => {
     // Si des points sont disponibles, utiliser le premier point pour la position par défaut
     const defaultPosition: [number, number] = points.length > 0 ? [points[0].lat, points[0].long] : [45.75, 4.85];
 
+
+    const ajouterBouton = (id: number) => {
+        // Fonction pour ajouter un bouton
+        console.log("Ajout du point : ", id);
+    };
+    
     return (
         <MapContainer center={defaultPosition} zoom={13} style={{ height: '400px', width: '100%' }}>
             <TileLayer
@@ -31,6 +41,7 @@ const Carte: React.FC<CarteProps> = ({ points }) => {
                 <Marker key={point.id} position={[point.lat, point.long]} icon={customIcon}>
                     <Popup>
                         <span>{`Point ID: ${point.id}`}</span>
+                        <Button onClick={() => ajouterBouton(point.id)}>Ajouter</Button>
                     </Popup>
                 </Marker>
             ))}
