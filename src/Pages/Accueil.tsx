@@ -5,7 +5,8 @@ import Carte from './Carte.tsx'; // Importation du composant Carte
 import {Intersection, Point} from '../Utils/points';
 import {Box, Button} from "@mui/material";
 import {charger_carte} from "../Appels_api/chargerCarte.ts";
-import toast, {Toaster} from "react-hot-toast";  // Importation de l'interface Point
+import toast, {Toaster} from "react-hot-toast";
+import {enregistrerCarte} from "../Appels_api/enregistrerCarte.ts";  // Importation de l'interface Point
 
 interface XmlFile {
     name: string;
@@ -89,6 +90,7 @@ export default function Accueil() {
                 if (e.target && typeof e.target.result === 'string') {
                     if (isCarte) {
                         setXmlCarte({ name: file.name, content: e.target.result, file });
+                        enregistrerCarte("CHARGEMENT", file);
                     } else {
                         setXmlDemande({ name: file.name, content: e.target.result, file });
                     }
@@ -108,7 +110,8 @@ export default function Accueil() {
     const handleFileSelect = (event: ChangeEvent<HTMLInputElement>, isCarte: boolean = false) => {
         const file = event.target.files?.[0];
         if (file) {
-            handleFileRead(file, isCarte);
+            enregistrerCarte("CHARGEMENT", file);
+            //handleFileRead(file, isCarte);
         }
     };
 
@@ -144,6 +147,7 @@ export default function Accueil() {
                 <input
                     type="file"
                     accept=".xml"
+                    // onChange={(event) => handleFileSelect(event, true)}
                     onChange={(event) => handleFileSelect(event, true)}
                 />
                 {xmlCarte && (
