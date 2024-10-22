@@ -3,7 +3,6 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Point } from '../Utils/points';  // Importation de l'interface Point
 import L from 'leaflet';
-import PlaceIcon from '@mui/icons-material/Place';
 
 interface CarteProps {
     points: Point[];  // Typage des points reçus en props

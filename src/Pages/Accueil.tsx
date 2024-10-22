@@ -6,7 +6,8 @@ import {Intersection, Point} from '../Utils/points';
 import {Box, Button} from "@mui/material";
 import {charger_carte} from "../Appels_api/chargerCarte.ts";
 import toast, {Toaster} from "react-hot-toast";
-import {enregistrerCarte} from "../Appels_api/enregistrerCarte.ts";  // Importation de l'interface Point
+import {enregistrerCarte} from "../Appels_api/enregistrerCarte.ts";
+import ListeRequetesLivraisonAjoutManuel from "./ListeRequetesLivraisonAjoutManuel.tsx";
 
 interface XmlFile {
     name: string;
@@ -20,14 +21,16 @@ export default function Accueil() {
     const [message, setMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [points, setPoints] = useState<Point[]>([]); // Stockage des points
-    const [intersections, setIntersections] = useState<Intersection[]>([]); // Stockage des intersections
-
+    const [intersections, setIntersections] = useState<Intersection[]>([]);
     
+    // correspond à la liste des adresses de livraison ajoutées à la main
+    const [adressesLivraisonsAjoutees, setAdresseLivraisons] = useState<Intersection[]>([]);
+    const [adressesLivraisonsXml, setAdressesLivraisonsXml] = useState<Intersection[]>([]);
     
-    const  ajouteLesPointsSurLaCarte = (nouveauPoints: Blob) => {
-        
-
-    }
+    // Correspond à la liste COMPLETE des adresses de livraison (ajoutées à la main + celles du fichier XML)
+    const [listesTotalAdressesLivraisons, setListesTotalAdressesLivraisons] = useState<Intersection[]>([]);
+    const [pointDeRetrait, setPointDeRetrait] = useState<Intersection | null>(null);
+    
     
     // Fonction pour ajouter les points sur la carte
     const loadPoints = (donnees: Blob) => {
@@ -41,10 +44,10 @@ export default function Accueil() {
                     nomRue: voisin.nomRue,
                     longueur: voisin.longueur,
                 })),
+                //adresse: point.voisins.length > 0 ? point.voisins[0].nomRue : 'Adresse',
             }));
             setIntersections(nouvellesIntersections);
             console.log("nouvellesIntersections", nouvellesIntersections);
-            //rempli les points maintenant : 
             const nouveauPoints: Point[] = nouvellesIntersections.map(
                 (intersection: Intersection) => ({
                     id: intersection.id,
@@ -54,14 +57,9 @@ export default function Accueil() {
             );
             setPoints(nouveauPoints);
             console.log("nouveauPoints", nouveauPoints);
-            
-            
-            
-            
         } catch (error) {
             setErrorMessage('Erreur lors du chargement des points depuis le fichier JSON');
         }
-
     }
     
     const testChargementFichierXML = () => {
@@ -73,10 +71,6 @@ export default function Accueil() {
                 loadPoints(data)
                 // ajouteLesPointsSurLaCarte(data);
                 toast.success(message);
-                
-                
-                
-               
             })
             .catch((error) => console.error(error));
     };
@@ -155,15 +149,18 @@ export default function Accueil() {
                         <p>Fichier de carte chargé: {xmlCarte.name}</p>
                     </div>
                 )}
-
-                {/* Affichage des messages */}
+                
                 {message && <p className="success-message">{message}</p>}
                 {errorMessage && <p className="error-message">{errorMessage}</p>}
-
-                {/* Affichage de la carte avec les points */}
                 {points.length > 0 && <Carte points={points}/>}
 
                 <Button variant="contained" color="primary" onClick={testChargementFichierXML}>Charger</Button>
+                { points.length > 0 && <ListeRequetesLivraisonAjoutManuel
+                    adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
+                    setAdresseLivraisons={setAdresseLivraisons}
+                    pointDeRetrait={pointDeRetrait}
+                    setPointDeRetrait={setPointDeRetrait}
+                />}
             </Box>
 
         </Box>
