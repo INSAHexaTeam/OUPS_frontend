@@ -119,7 +119,7 @@ const Carte: React.FC<CarteProps> = ({
     // Function to zoom and center the map on a specific point
     const handleZoomToPoint = (latitude: number, longitude: number) => {
         if (mapRef.current) {
-            mapRef.current.setView([latitude, longitude], 18); // Zoom level 18
+            mapRef.current.setView([latitude, longitude], 16); // Zoom level 18
         }
     };
 
