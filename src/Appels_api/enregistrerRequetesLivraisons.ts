@@ -1,4 +1,4 @@
-export async function enregistrerCarte(etat : string, file : File | null): Promise<{ message: string, data: Blob }> {
+export async function enregistrerRequetesLivraisons(etat : string, file : File | null): Promise<{ message: string, data: Blob }> {
     return new Promise(async (resolve, reject) => {
         try {
             let cheminVersFichier : string;
@@ -8,12 +8,10 @@ export async function enregistrerCarte(etat : string, file : File | null): Promi
                 resolve({ message: "Fichier non trouvé", data: new Blob() });
             }
             const requestParams : string = `?cheminVersFichier=${cheminVersFichier}&etat=${etat}`;
-            console.log("requestParams", requestParams);
-            const req = await fetch(`http://localhost:8080/carte/charger${requestParams}`, {
+            const req = await fetch(`http://localhost:8080/carte/livraisons${requestParams}`, {
                 method: "POST"
             });
-            console.log("req", req);
-
+            
             // Si la réponse n'est pas OK, on gère les erreurs (s'il y a des erreurs)
             if (!req.ok) {
                 const result = await req.json();

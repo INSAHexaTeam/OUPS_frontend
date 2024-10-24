@@ -1,19 +1,22 @@
 import { Intersection } from "../Utils/points";
+// @ts-ignore
 import React from "react";
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import { Box } from "@mui/material";
 import { DataGrid, GridActionsCellItem, GridColDef } from "@mui/x-data-grid";
 
 interface ListeRequetesLivraisonAjoutManuelProps {
+    adressesLivraisonsXml: Intersection[];
     adressesLivraisonsAjoutees: Intersection[];
-    setAdresseLivraisons: (adressesLivraisons: Intersection[]) => void;
+    setAdresseLivraisonsAjoutees: (adressesLivraisons: Intersection[]) => void;
     pointDeRetrait: Intersection; // correspond à l'entrepôt
     setPointDeRetrait: (pointDeRetrait: Intersection) => void;
 }
 
 export default function ListeRequetesLivraisonAjoutManuel({
+                                                              adressesLivraisonsXml,
                                                               adressesLivraisonsAjoutees,
-                                                              setAdresseLivraisons,
+                                                              setAdresseLivraisonsAjoutees,
                                                               pointDeRetrait,
                                                               setPointDeRetrait
                                                           }: ListeRequetesLivraisonAjoutManuelProps) {
@@ -21,16 +24,29 @@ export default function ListeRequetesLivraisonAjoutManuel({
     // Fonction pour supprimer une livraison
     const handleSupprimerLivraison = (id: number) => () => {
         const newAdressesLivraisons = adressesLivraisonsAjoutees.filter((livraison) => livraison.id !== id);
-        setAdresseLivraisons(newAdressesLivraisons);
+        setAdresseLivraisonsAjoutees(newAdressesLivraisons);
     };
 
-    // Define rows with pointDeRetrait first
+    // L'entrepôt est affiché en premier dans la liste puis les adresses de livraison xml
     let rows = [];
+    if (pointDeRetrait) {
+        rows.push({
+            ...pointDeRetrait,
+            adresse: `${pointDeRetrait.adresse} (entrepôt)`,
+            isRetrait: true
+        });
+    }
+    if(adressesLivraisonsXml !== null && adressesLivraisonsXml.length > 0) {
+        rows = rows.concat(adressesLivraisonsXml.map(livraison => ({
+            ...livraison,
+            isLivraisonXml: true
+        })));
+    }
     if (adressesLivraisonsAjoutees !== null && adressesLivraisonsAjoutees.length > 0) {
-        rows = adressesLivraisonsAjoutees.map(livraison => ({
+        rows = rows.concat(adressesLivraisonsAjoutees.map(livraison => ({
             ...livraison,
             isRetrait: false
-        }));
+        })));
     }
 
     const columns: GridColDef[] = [
@@ -45,9 +61,9 @@ export default function ListeRequetesLivraisonAjoutManuel({
             field: "actions",
             type: "actions",
             headerName: "Suppression",
-            width: 70,
+            width: 100,
             getActions: ({ id, row }) => {
-                if (row.isRetrait) return [];
+                if (row.isRetrait || row.isLivraisonXml) return [];
                 return [
                     <GridActionsCellItem
                         icon={<DeleteRoundedIcon />}
@@ -64,7 +80,6 @@ export default function ListeRequetesLivraisonAjoutManuel({
             <DataGrid
                 rows={rows}
                 columns={columns}
-                autoHeight // Automatically adjusts height to fit rows
                 hideFooterPagination
                 disableSelectionOnClick
                 sx={{

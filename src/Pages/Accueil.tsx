@@ -1,3 +1,4 @@
+// @ts-ignore
 import React, { useState, useEffect, DragEvent, ChangeEvent } from 'react';
 import '../Styles/Accueil.css';
 // @ts-ignore
@@ -9,6 +10,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { enregistrerCarte } from "../Appels_api/enregistrerCarte.ts";
 // @ts-ignore
 import ListeRequetesLivraisonAjoutManuel from "./ListeRequetesLivraisonAjoutManuel.tsx";
+import {enregistrerRequetesLivraisons} from "../Appels_api/enregistrerRequetesLivraisons.ts";
 
 interface XmlFile {
     name: string;
@@ -17,15 +19,13 @@ interface XmlFile {
 }
 
 export default function Accueil() {
-    const [xmlCarte, setXmlCarte] = useState<XmlFile | null>(null);
-    const [xmlDemande, setXmlDemande] = useState<XmlFile | null>(null);
     const [message, setMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [points, setPoints] = useState<Point[]>([]); // Stockage des points
     const [intersections, setIntersections] = useState<Intersection[]>([]);
 
     // correspond à la liste des adresses de livraison ajoutées à la main
-    const [adressesLivraisonsAjoutees, setAdresseLivraisons] = useState<Intersection[]>([]);
+    const [adressesLivraisonsAjoutees, setAdresseLivraisonsAjoutees] = useState<Intersection[]>([]);
     const [adressesLivraisonsXml, setAdressesLivraisonsXml] = useState<Intersection[]>([]);
 
     // Correspond à la liste COMPLETE des adresses de livraison (ajoutées à la main + celles du fichier XML)
@@ -75,16 +75,47 @@ export default function Accueil() {
             reader.onload = (e: ProgressEvent<FileReader>) => {
                 if (e.target && typeof e.target.result === 'string') {
                     if (isCarte) {
-                        setXmlCarte({ name: file.name, content: e.target.result, file });
                         // Appel de l'API pour enregistrer le fichier
-                        enregistrerCarte("CHARGEMENT", file).then((response) => {
-                            const { message, data } = response;
-                            loadPoints(data);
-                            toast.success(message);
-                        });
+                        enregistrerCarte("CHARGEMENT", file)
+                            .then((response) => {
+                                const { message, data } = response;
+                                loadPoints(data);
+                                toast.success(message);
+                            });
                         setPlanCharge(true); // Le plan est chargé.
                     } else {
-                        setXmlDemande({ name: file.name, content: e.target.result, file });
+                        enregistrerRequetesLivraisons("CHARGEMENT", file)
+                            .then((response) => {
+                                const { message, data } = response;
+                                console.log("Data : ", data);
+                                
+                                const entrepot = data.entrepot;
+                                const listeLivraisons = data.livraisonList;
+                                
+                                // Rajouter à l'objet entrepot une adresse (la première rue voisine)
+                                const pointDeRetrait = {
+                                    id: entrepot.intersection.id,
+                                    latitude: entrepot.intersection.latitude,
+                                    longitude: entrepot.intersection.longitude,
+                                    // Ajout de l'adresse de la première rue voisine
+                                    adresse: entrepot.intersection.voisins.length > 0 ? entrepot.intersection.voisins[0].nomRue : 'pas définie',
+                                    voisins: entrepot.intersection.voisins
+                                };
+                                setPointDeRetrait(pointDeRetrait);
+                                
+                                // On ajoute l'adresse du premier voisin de chaque livraison
+                                const adressesLivraisonsMapped = listeLivraisons.map((livraison: any) => ({
+                                    id: livraison.id,
+                                    latitude: livraison.latitude,
+                                    longitude: livraison.longitude,
+                                    // Ajout de l'adresse de la première rue voisine
+                                    adresse: livraison.voisins.length > 0 ? livraison.voisins[0].nomRue : 'pas définie',
+                                    voisins: livraison.voisins
+                                }));
+                                setAdressesLivraisonsXml(adressesLivraisonsMapped);
+                                
+                                toast.success(message);
+                            });
                     }
                     setMessage(null);
                     setErrorMessage(null);
@@ -99,8 +130,8 @@ export default function Accueil() {
         }
     };
 
-    // Fonction pour gérer la sélection du fichier plan via le bouton de sélection de fichier
-    const handleFileSelectPlan = (event: ChangeEvent<HTMLInputElement>, isCarte: boolean = false) => {
+    // Fonction pour gérer la sélection d'un fichier xml via le bouton de sélection de fichier
+    const handleFileSelect = (event: ChangeEvent<HTMLInputElement>, isCarte: boolean = false) => {
         const file = event.target.files?.[0];
         if (file) {
             handleFileRead(file, isCarte);
@@ -111,12 +142,9 @@ export default function Accueil() {
     const handleFileDrop = (event: DragEvent<HTMLDivElement>, isCarte: boolean = false) => {
         event.preventDefault();
         const file = event.dataTransfer.files[0];
-        handleFileRead(file, isCarte);
-    };
-
-    // Fonction pour gérer le survol du fichier (inchangée)
-    const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
-        event.preventDefault();
+        if(file){
+            handleFileRead(file, isCarte);
+        }
     };
 
     const calculTournee = () => {
@@ -133,7 +161,7 @@ export default function Accueil() {
         <Box sx={{ display: "flex", flexDirection: "row", width: '100%', height: '100%', justifyContent: "center" }}>
             <Toaster />
             {/*<LeftDrawer selected="Accueil" />*/}
-            <Box sx={{ display: "flex", flexDirection: "column", width: '80%', gap: "2dvh" }}>
+            <Box sx={{display: "flex", flexDirection: "column", width: '90%', gap: "2dvh"}}>
                 <Box>
                     <h1>Gestion des livraisons</h1>
 
@@ -142,53 +170,49 @@ export default function Accueil() {
                 </Box>
 
                 {!planCharge && (
-                    <>
-                        <div
-                            onDrop={(event) => handleFileDrop(event, true)}
-                            onDragOver={handleDragOver}
-                            className="dropzone"
-                        >
-                            <p>Glissez et déposez votre fichier carte ici</p>
-                        </div>
-                        <input
-                            type="file"
-                            accept=".xml"
-                            onChange={(event) => handleFileSelectPlan(event, true)}
-                        />
-                    </>
-                )}
-
-                {xmlCarte && (
-                    <div>
-                        <p>Fichier de carte chargé: {xmlCarte.name}</p>
+                    <div
+                        onDrop={(event) => handleFileDrop(event, true)}
+                        className="dropzone"
+                    >
+                        <p>Glissez et déposez votre fichier carte ici</p>
                     </div>
                 )}
 
+                <input
+                    type="file"
+                    accept=".xml"
+                    onChange={(event) => handleFileSelect(event, true)}
+                />
+
                 {planCharge && (
-                    <Button sx={{width: "20%"}} variant="contained" color="primary" onClick={() => {/* Handle requêtes loading */}}>
-                        Charger les requêtes de livraison
-                    </Button>
+                    <input type="file"
+                           accept=".xml"
+                           onChange={(event) => handleFileSelect(event, false)}
+                    />
                 )}
 
                 {message && <p className="success-message">{message}</p>}
                 {errorMessage && <p className="error-message">{errorMessage}</p>}
 
                 {points.length > 0 && (
-                    <Box sx={{ display: 'flex', flexDirection: 'row', gap: '2dvw' }}>
+                    <Box sx={{display: 'flex', flexDirection: 'row', gap: '2dvw'}}>
                         {/* Carte à gauche */}
-                        <Box sx={{ width: '60%' }}>
+                        <Box sx={{width: '60%'}}>
                             <Carte
                                 intersections={intersections}
-                                setAdresseLivraisons={setAdresseLivraisons}
+                                setAdresseLivraisonsAjoutees={setAdresseLivraisonsAjoutees}
                                 adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
+                                adressesLivraisonsXml={adressesLivraisonsXml}
+                                adresseEntrepot={pointDeRetrait}
                             />
                         </Box>
 
                         {/* Liste des adresses de livraison à droite */}
-                        <Box sx={{ width: '40%', overflowY: 'auto' }}>
+                        <Box sx={{width: '40%', overflowY: 'auto'}}>
                             <ListeRequetesLivraisonAjoutManuel
+                                adressesLivraisonsXml={adressesLivraisonsXml}
                                 adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
-                                setAdresseLivraisons={setAdresseLivraisons}
+                                setAdresseLivraisonsAjoutees={setAdresseLivraisonsAjoutees}
                                 pointDeRetrait={pointDeRetrait}
                                 setPointDeRetrait={setPointDeRetrait}
                             />
@@ -196,6 +220,9 @@ export default function Accueil() {
                     </Box>
                 )}
 
+                {planCharge && ( 
+                    <span>Nombre total de requêtes de livraisons : <b>{listesTotalAdressesLivraisons.length}</b></span>
+                )}
                 <Button size="small" variant="contained" color="primary" onClick={calculTournee}>
                     Calculer la tournée
                 </Button>
