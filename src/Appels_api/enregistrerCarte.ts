@@ -1,24 +1,17 @@
-import {Form} from "react-router-dom";
-
-const apiUrl = process.env.REACT_APP_API_URL;
-
-export async function enregistrerCarte(etat : string, file : File | null, filepath?: string): Promise<{ message: string, data: Blob }> {
+export async function enregistrerCarte(etat : string, file : File | null): Promise<{ message: string, data: Blob }> {
     return new Promise(async (resolve, reject) => {
         try {
-            console.log("file", file);
-            const formData = new FormData();
-            formData.append("etat", etat);
-            if (file) {
-                formData.append("fichier", file);
+            let cheminVersFichier : string;
+            if(file && file.name){
+                cheminVersFichier = file.name;
+            }else{
+                resolve({ message: "Fichier non trouvé", data: new Blob() });
             }
-            if (filepath) {
-                formData.append("cheminVersFichier", filepath);
-            }
-            
-            const req = await fetch(`http://localhost:8080/carte/charger  `, {
-                method: "POST",
-                body : formData
+            const requestParams : string = `?cheminVersFichier=${cheminVersFichier}&etat=${etat}`;
+            const req = await fetch(`http://localhost:8080/carte/charger${requestParams}`, {
+                method: "POST"
             });
+            console.log("req", req);
 
             // Si la réponse n'est pas OK, on gère les erreurs (s'il y a des erreurs)
             if (!req.ok) {
@@ -29,7 +22,6 @@ export async function enregistrerCarte(etat : string, file : File | null, filepa
             // La réponse est un blob (CSV), donc on retourne le blob directement
             const resp = await req.json();
             resolve({ message: "Données téléchargées", data: resp });
-
         } catch (error: any) {
             // Gestion des erreurs
             reject(error.message);

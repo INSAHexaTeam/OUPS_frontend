@@ -1,8 +1,8 @@
-import {Intersection} from "../Utils/points";
-import React, {useEffect} from "react";
+import { Intersection } from "../Utils/points";
+import React from "react";
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
-import {Box} from "@mui/material";
-import {DataGrid, GridActionsCellItem, GridColDef} from "@mui/x-data-grid";
+import { Box } from "@mui/material";
+import { DataGrid, GridActionsCellItem, GridColDef } from "@mui/x-data-grid";
 
 interface ListeRequetesLivraisonAjoutManuelProps {
     adressesLivraisonsAjoutees: Intersection[];
@@ -17,14 +17,13 @@ export default function ListeRequetesLivraisonAjoutManuel({
                                                               pointDeRetrait,
                                                               setPointDeRetrait
                                                           }: ListeRequetesLivraisonAjoutManuelProps) {
-    
+
     // Fonction pour supprimer une livraison
     const handleSupprimerLivraison = (id: number) => () => {
         const newAdressesLivraisons = adressesLivraisonsAjoutees.filter((livraison) => livraison.id !== id);
         setAdresseLivraisons(newAdressesLivraisons);
     };
 
-    // Define rows with pointDeRetrait first
     // Define rows with pointDeRetrait first
     let rows = [];
     if (adressesLivraisonsAjoutees !== null && adressesLivraisonsAjoutees.length > 0) {
@@ -34,14 +33,12 @@ export default function ListeRequetesLivraisonAjoutManuel({
         }));
     }
 
-
-
     const columns: GridColDef[] = [
         { field: 'id', headerName: 'ID', width: 90 },
         {
             field: 'adresse',
             headerName: 'Adresse de livraison',
-            width: 300,
+            width: 250,
             editable: false,
         },
         {
@@ -63,11 +60,18 @@ export default function ListeRequetesLivraisonAjoutManuel({
     ];
 
     return (
-        <Box>
+        <Box sx={{ height: 'auto', maxHeight: 400, width: '100%' }}> {/* Max height for 6 rows */}
             <DataGrid
                 rows={rows}
                 columns={columns}
+                autoHeight // Automatically adjusts height to fit rows
                 hideFooterPagination
+                disableSelectionOnClick
+                sx={{
+                    '& .MuiDataGrid-root': {
+                        minHeight: 'unset',
+                    },
+                }}
             />
         </Box>
     );
