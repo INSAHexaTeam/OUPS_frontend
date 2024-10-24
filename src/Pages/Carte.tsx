@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import * as turf from '@turf/turf';
@@ -12,6 +12,7 @@ interface CarteProps {
     adressesLivraisonsXml: Intersection[];
     setAdresseLivraisonsAjoutees: (adresses: Intersection[]) => void;
     adresseEntrepot: Intersection | null;
+    zoomToPoint: (latitude: number, longitude: number) => void; // New prop
 }
 
 const customMarkerIntersections = new L.Icon({
@@ -47,16 +48,18 @@ const polygonStyle = {
 };
 
 const Carte: React.FC<CarteProps> = ({
-    intersections,
-    adressesLivraisonsAjoutees,
-    adressesLivraisonsXml,
-    setAdresseLivraisonsAjoutees,
-    adresseEntrepot
-}) => {
+                                         intersections,
+                                         adressesLivraisonsAjoutees,
+                                         adressesLivraisonsXml,
+                                         setAdresseLivraisonsAjoutees,
+                                         adresseEntrepot,
+                                         zoomToPoint // New prop
+                                     }) => {
     const [zoomLevel, setZoomLevel] = useState<number>(13);
     const [convexHull, setConvexHull] = useState<any>(null);
     const [intersectionsFiltrees, setIntersectionsFiltrees] = useState<Intersection[]>([]);
     const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
+    const mapRef = useRef<L.Map>(null); // Reference to the map
 
     const minZoomLevelForIntersections = 16;
 
@@ -113,8 +116,20 @@ const Carte: React.FC<CarteProps> = ({
 
     }, [intersections, adressesLivraisonsXml, adresseEntrepot, adressesLivraisonsAjoutees, mapBounds]);
 
+    // Function to zoom and center the map on a specific point
+    const handleZoomToPoint = (latitude: number, longitude: number) => {
+        if (mapRef.current) {
+            mapRef.current.setView([latitude, longitude], 18); // Zoom level 18
+        }
+    };
+
+    // Pass the function to the parent component
+    useEffect(() => {
+        zoomToPoint(handleZoomToPoint);
+    }, [zoomToPoint]);
+
     return (
-        <MapContainer center={[45.75, 4.85]} zoom={zoomLevel} style={{ height: '400px', width: '100%' }}>
+        <MapContainer center={[45.75, 4.85]} zoom={zoomLevel} style={{ height: '400px', width: '100%' }} ref={mapRef}>
             <MapEvents />
             <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

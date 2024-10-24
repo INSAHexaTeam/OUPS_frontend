@@ -11,6 +11,7 @@ interface ListeRequetesLivraisonAjoutManuelProps {
     setAdresseLivraisonsAjoutees: (adressesLivraisons: Intersection[]) => void;
     pointDeRetrait: Intersection; // correspond à l'entrepôt
     setPointDeRetrait: (pointDeRetrait: Intersection) => void;
+    zoomToPoint: (latitude: number, longitude: number) => void;
 }
 
 export default function ListeRequetesLivraisonAjoutManuel({
@@ -18,13 +19,19 @@ export default function ListeRequetesLivraisonAjoutManuel({
                                                               adressesLivraisonsAjoutees,
                                                               setAdresseLivraisonsAjoutees,
                                                               pointDeRetrait,
-                                                              setPointDeRetrait
+                                                              setPointDeRetrait,
+                                                              zoomToPoint
                                                           }: ListeRequetesLivraisonAjoutManuelProps) {
 
     // Fonction pour supprimer une livraison
     const handleSupprimerLivraison = (id: number) => () => {
         const newAdressesLivraisons = adressesLivraisonsAjoutees.filter((livraison) => livraison.id !== id);
         setAdresseLivraisonsAjoutees(newAdressesLivraisons);
+    };
+
+    const handleRowClick = (params) => {
+        const { latitude, longitude } = params.row;
+        zoomToPoint(latitude, longitude);
     };
 
     // L'entrepôt est affiché en premier dans la liste puis les adresses de livraison xml
@@ -82,6 +89,7 @@ export default function ListeRequetesLivraisonAjoutManuel({
                 columns={columns}
                 hideFooterPagination
                 disableSelectionOnClick
+                onRowClick={handleRowClick}
                 sx={{
                     '& .MuiDataGrid-root': {
                         minHeight: 'unset',
