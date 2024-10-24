@@ -7,6 +7,21 @@ import toast, { Toaster } from "react-hot-toast";
 import { enregistrerCarte } from "../Appels_api/enregistrerCarte.ts";
 import ListeRequetesLivraisonAjoutManuel from "./ListeRequetesLivraisonAjoutManuel.tsx";
 import { enregistrerRequetesLivraisons } from "../Appels_api/enregistrerRequetesLivraisons.ts";
+import MailIcon from '@mui/icons-material/Mail';
+import MapIcon from '@mui/icons-material/Map';
+import {styled} from "@mui/material/styles";
+
+const VisuallyHiddenInput = styled('input')({
+    clip: 'rect(0 0 0 0)',
+    clipPath: 'inset(50%)',
+    height: 1,
+    overflow: 'hidden',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    whiteSpace: 'nowrap',
+    width: 1,
+});
 
 export default function Accueil() {
     const [message, setMessage] = useState<string | null>(null);
@@ -146,17 +161,48 @@ export default function Accueil() {
                     </div>
                 )}
 
-                <input
-                    type="file"
-                    accept=".xml"
-                    onChange={(event) => handleFileSelect(event, true)}
-                />
+                {/*<input*/}
+                {/*    type="file"*/}
+                {/*    accept=".xml"*/}
+                {/*    onChange={(event) => handleFileSelect(event, true)}*/}
+                {/*/>*/}
+
+                <Button
+                    component="label"
+                    role={undefined}
+                    variant="contained"
+                    tabIndex={-1}
+                    startIcon={<MapIcon />}
+                >
+                    Charger un plan
+                    <VisuallyHiddenInput
+                        type="file"
+                        accept=".xml"
+                        onChange={(event) => handleFileSelect(event, true)}
+                        multiple
+                    />
+                </Button>
 
                 {planCharge && (
-                    <input type="file"
-                           accept=".xml"
-                           onChange={(event) => handleFileSelect(event, false)}
-                    />
+                    // <input type="file"
+                    //        accept=".xml"
+                    //        onChange={(event) => handleFileSelect(event, false)}
+                    // />
+                    <Button
+                        component="label"
+                        role={undefined}
+                        variant="contained"
+                        tabIndex={-1}
+                        startIcon={<MailIcon />}
+                    >
+                        Charger des livraisons
+                        <VisuallyHiddenInput
+                            type="file"
+                            accept=".xml"
+                            onChange={(event) => handleFileSelect(event, false)}
+                            multiple
+                        />
+                    </Button>
                 )}
 
                 {message && <p className="success-message">{message}</p>}
