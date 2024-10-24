@@ -1,12 +1,13 @@
 import React, { useState, useEffect, DragEvent, ChangeEvent } from 'react';
 import '../Styles/Accueil.css';
-import LeftDrawer from './LeftDrawer.tsx'; // Importation du composant LeftDrawer
+// @ts-ignore
 import Carte from './Carte.tsx'; // Importation du composant Carte
 import { Intersection, Point } from '../Utils/points';
 import { Box, Button } from "@mui/material";
-import { charger_carte } from "../Appels_api/chargerCarte.ts";
 import toast, { Toaster } from "react-hot-toast";
+// @ts-ignore
 import { enregistrerCarte } from "../Appels_api/enregistrerCarte.ts";
+// @ts-ignore
 import ListeRequetesLivraisonAjoutManuel from "./ListeRequetesLivraisonAjoutManuel.tsx";
 
 interface XmlFile {
@@ -81,7 +82,7 @@ export default function Accueil() {
                             loadPoints(data);
                             toast.success(message);
                         });
-                        setPlanCharge(true); // Le plan est chargé
+                        setPlanCharge(true); // Le plan est chargé.
                     } else {
                         setXmlDemande({ name: file.name, content: e.target.result, file });
                     }
@@ -131,7 +132,7 @@ export default function Accueil() {
     return (
         <Box sx={{ display: "flex", flexDirection: "row", width: '100%', height: '100%', justifyContent: "center" }}>
             <Toaster />
-            <LeftDrawer selected="Accueil" />
+            {/*<LeftDrawer selected="Accueil" />*/}
             <Box sx={{ display: "flex", flexDirection: "column", width: '80%', gap: "2dvh" }}>
                 <Box>
                     <h1>Gestion des livraisons</h1>

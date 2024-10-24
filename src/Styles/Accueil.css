@@ -14,9 +14,9 @@ h1, h2 {
 }
 
 .dropzone {
-    width: 100%;
+    width: 30%;
     max-width: 500px;
-    height: 150px;
+    height: 15%;
     margin: 0 auto 20px auto;
     padding: 20px;
     border: 2px dashed #aaa;
