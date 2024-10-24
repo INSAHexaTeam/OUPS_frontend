@@ -76,11 +76,16 @@ export default function Accueil() {
                                 const { message, data } = response;
                                 loadPoints(data);
                                 toast.success(message);
-                            });
+                            }).catch((error) => {
+                            toast.error(error);
+                        });
                         setPlanCharge(true);
                     } else {
                         enregistrerRequetesLivraisons("CHARGEMENT", file)
                             .then((response) => {
+                                
+                                console.log('je ne suis pas sensé être la : ',response);
+                                
                                 const { message, data } = response;
                                 const entrepot = data.entrepot;
                                 const listeLivraisons = data.livraisonList;
@@ -89,8 +94,8 @@ export default function Accueil() {
                                     id: entrepot.intersection.id,
                                     latitude: entrepot.intersection.latitude,
                                     longitude: entrepot.intersection.longitude,
-                                    adresse: entrepot.intersection.voisins.length > 0 ? entrepot.intersection.voisins[0].nomRue : 'pas définie',
-                                    voisins: entrepot.intersection.voisins
+                                    adresse: entrepot.intersection?.voisins.length > 0 ? entrepot.intersection?.voisins[0].nomRue : 'pas définie',
+                                    voisins: entrepot.intersection?.voisins
                                 };
                                 setPointDeRetrait(pointDeRetrait);
 
@@ -102,9 +107,10 @@ export default function Accueil() {
                                     voisins: livraison.voisins
                                 }));
                                 setAdressesLivraisonsXml(adressesLivraisonsMapped);
-
                                 toast.success(message);
-                            });
+                            }).catch((error) => {
+                            toast.error(error);
+                        });
                     }
                     setMessage(null);
                     setErrorMessage(null);

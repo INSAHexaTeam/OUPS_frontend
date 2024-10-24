@@ -22,9 +22,14 @@ export async function enregistrerCarte(etat : string, file : File | null): Promi
 
             // La réponse est un blob (CSV), donc on retourne le blob directement
             const resp = await req.json();
+            console.log("resp", resp);
+            if (resp.intersections.length === 0) {
+                reject("Veuillez charger un fichier valide");
+            }
             resolve({ message: "Données téléchargées", data: resp });
         } catch (error: any) {
             // Gestion des erreurs
+            console?.log("error", error);
             reject(error.message);
         }
     });
