@@ -89,7 +89,7 @@ export default function Accueil() {
                                 
                                 const { message, data } = response;
                                 const entrepot = data.entrepot;
-                                const listeLivraisons = data.livraisonList;
+                                const listeLivraisons = data.livraisons;
 
                                 const pointDeRetrait = {
                                     id: entrepot.intersection.id,
@@ -141,6 +141,7 @@ export default function Accueil() {
             return;
         } else {
             const livraisons = {
+                coursier : 1,
                 entrepot: {
                     heureDepart: "08:00:00",
                     intersection: pointDeRetrait
