@@ -12,11 +12,12 @@ export async function calculerItineraire(listeLivraisons : Livraisons): Promise<
                 },
                 body: JSON.stringify(listeLivraisons)
             });
-            console.log("reqTournee", req);
+           
             
             // Si la réponse n'est pas OK, on gère les erreurs (s'il y a des erreurs)
             if (!req.ok) {
                 const result = await req.json();
+                console.log("reqTournee", result);
                 return reject(result);  // Typiquement ici on utilise return pour quitter l'exécution
             }
 
