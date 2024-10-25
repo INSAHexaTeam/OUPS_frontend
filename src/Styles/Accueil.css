@@ -13,24 +13,12 @@ h1, h2 {
     margin-bottom: 20px;
 }
 
-.dropzone {
-    width: 30%;
-    max-width: 500px;
-    height: 15%;
-    margin: 0 auto 20px auto;
-    padding: 20px;
-    border: 2px dashed #aaa;
-    background-color: #f9f9f9;
+.box-buttons{
     display: flex;
-    align-items: center;
     justify-content: center;
-    cursor: pointer;
-}
-
-.dropzone p {
-    color: #555;
-    font-size: 16px;
-    text-align: center;
+    align-items: center;
+    gap : 20px;
+    width: 100%;
 }
 
 button {
