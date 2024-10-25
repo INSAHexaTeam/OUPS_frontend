@@ -90,9 +90,13 @@ export default function ListeRequetesLivraisonAjoutManuel({
                 hideFooterPagination
                 disableSelectionOnClick
                 onRowClick={handleRowClick}
+                getRowClassName={(params) => params.indexRelativeToCurrentPage === 0 ? 'first-row' : ''}
                 sx={{
                     '& .MuiDataGrid-root': {
                         minHeight: 'unset',
+                    },
+                    '& .first-row': {
+                        backgroundColor: 'lightblue', // Change this to your desired color
                     },
                 }}
             />

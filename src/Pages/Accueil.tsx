@@ -89,7 +89,7 @@ export default function Accueil() {
                                 
                                 const { message, data } = response;
                                 const entrepot = data.entrepot;
-                                const listeLivraisons = data.livraisons;
+                                const listeLivraisons = data.livraisonList;
 
                                 const pointDeRetrait = {
                                     id: entrepot.intersection.id,
@@ -135,14 +135,6 @@ export default function Accueil() {
         }
     };
 
-    const handleFileDrop = (event: DragEvent<HTMLDivElement>, isCarte: boolean = false) => {
-        event.preventDefault();
-        const file = event.dataTransfer.files[0];
-        if(file){
-            handleFileRead(file, isCarte);
-        }
-    };
-
     const calculTournee = () => {
         if (listesTotalAdressesLivraisons.length === 0) {
             toast.error("Veuillez ajouter des adresses de livraison");
@@ -171,50 +163,41 @@ export default function Accueil() {
                     <h1>Gestion des livraisons</h1>
                     <h2>{planCharge ? "Charger un autre plan" : "Charger une carte XML"}</h2>
                 </Box>
-
-                {!planCharge && (
-                    <div
-                        onDrop={(event) => handleFileDrop(event, true)}
-                        className="dropzone"
-                    >
-                        <p>Glissez et déposez votre fichier carte ici</p>
-                    </div>
-                )}
-                
-
-                <Button
-                    component="label"
-                    role={undefined}
-                    variant="contained"
-                    tabIndex={-1}
-                    startIcon={<MapIcon />}
-                >
-                    Charger un plan
-                    <VisuallyHiddenInput
-                        type="file"
-                        accept=".xml"
-                        onChange={(event) => handleFileSelect(event, true)}
-                        multiple
-                    />
-                </Button>
-
-                {planCharge && (
+                <Box className="box-buttons">
                     <Button
                         component="label"
                         role={undefined}
                         variant="contained"
                         tabIndex={-1}
-                        startIcon={<MailIcon />}
+                        startIcon={<MapIcon />}
                     >
-                        Charger des livraisons
+                        Charger un plan
                         <VisuallyHiddenInput
                             type="file"
                             accept=".xml"
-                            onChange={(event) => handleFileSelect(event, false)}
+                            onChange={(event) => handleFileSelect(event, true)}
                             multiple
                         />
                     </Button>
-                )}
+    
+                    {planCharge && (
+                        <Button
+                            component="label"
+                            role={undefined}
+                            variant="contained"
+                            tabIndex={-1}
+                            startIcon={<MailIcon />}
+                        >
+                            Charger des livraisons
+                            <VisuallyHiddenInput
+                                type="file"
+                                accept=".xml"
+                                onChange={(event) => handleFileSelect(event, false)}
+                                multiple
+                            />
+                        </Button>
+                    )}
+                </Box>
 
                 {message && <p className="success-message">{message}</p>}
                 {errorMessage && <p className="error-message">{errorMessage}</p>}
@@ -248,9 +231,12 @@ export default function Accueil() {
                 {planCharge && (
                     <span>Nombre total de requêtes de livraisons : <b>{listesTotalAdressesLivraisons.length}</b></span>
                 )}
-                <Button size="small" variant="contained" color="primary" onClick={calculTournee}>
-                    Calculer la tournée
-                </Button>
+                
+                <Box  className="box-buttons">
+                    <Button varia   nt="contained" color="primary" onClick={calculTournee}>
+                        Calculer la tournée
+                    </Button>
+                </Box>
             </Box>
         </Box>
     );
