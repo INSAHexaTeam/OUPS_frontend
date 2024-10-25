@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
 import '../Styles/Accueil.css';
 import Carte from './Carte.tsx';
 import { Intersection, Point } from '../Utils/points';
-import { Box, Button, CircularProgress } from "@mui/material";
+import { Box, Button, CircularProgress, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
 import toast, { Toaster } from "react-hot-toast";
 import { enregistrerCarte } from "../Appels_api/enregistrerCarte.ts";
 import ListeRequetesLivraisonAjoutManuel from "./ListeRequetesLivraisonAjoutManuel.tsx";
@@ -34,6 +34,7 @@ export default function Accueil() {
     const [pointDeRetrait, setPointDeRetrait] = useState<Intersection | null>(null);
     const [planCharge, setPlanCharge] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [numCouriers, setNumCouriers] = useState(1); // New state for number of couriers
     const zoomToPointRef = useRef<(latitude: number, longitude: number) => void>(() => {});
 
     useEffect(() => {
@@ -246,7 +247,20 @@ export default function Accueil() {
                 )}
 
                 {planCharge && (
-                    <Box  className="box-buttons">
+                    <Box className="box-buttons" sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <FormControl variant="outlined" size="medium" sx={{width: '140px'}}>
+                            <InputLabel>Nombre de coursiers</InputLabel>
+                            <Select
+                                value={numCouriers}
+                                onChange={(e) => setNumCouriers(e.target.value as number)}
+                                label="Nombre de coursiers"
+                                sx={{height: '40px'}}
+                            >
+                                {[1, 2, 3, 4, 5].map((num) => (
+                                    <MenuItem key={num} value={num}>{num}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
                         <Button variant="contained" color="primary" onClick={calculTournee}>
                             Calculer la tournée
                         </Button>
