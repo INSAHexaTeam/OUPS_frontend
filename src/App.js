@@ -17,8 +17,10 @@ function App() {
       <ThemeProvider theme={theme}>
         <BrowserRouter>
           <Routes>
-            <Route exact path="/accueil" element={<Accueil />} />
+            <Route exact path="/" element={<Accueil />} />
             <Route exact path="/carte" element={<Carte />} />
+            <Route exact path="/valider-carte" element={<Accueil />} />
+            <Route exact path="/valider-demande" element={<Accueil />} />
           </Routes>
         </BrowserRouter>
       </ThemeProvider>
