@@ -95,7 +95,7 @@ export default function Accueil() {
                                     id: entrepot.intersection.id,
                                     latitude: entrepot.intersection.latitude,
                                     longitude: entrepot.intersection.longitude,
-                                    adresse: entrepot.intersection?.voisins.length > 0 ? entrepot.intersection?.voisins[0].nomRue : 'pas définie',
+                                    adresse: entrepot.intersection?.voisins.length > 0 ? entrepot.intersection?.voisins[0].nomRue : 'Adresse inconnue',
                                     voisins: entrepot.intersection?.voisins
                                 };
 
@@ -105,7 +105,7 @@ export default function Accueil() {
                                     id: livraison.id,
                                     latitude: livraison.latitude,
                                     longitude: livraison.longitude,
-                                    adresse: livraison.voisins.length > 0 ? livraison.voisins[0].nomRue : 'pas définie',
+                                    adresse: livraison.voisins.length > 0 && livraison.voisins[0].nomRue ? livraison.voisins[0].nomRue : 'Adresse inconnue',
                                     voisins: livraison.voisins
                                 }));
 
@@ -132,6 +132,10 @@ export default function Accueil() {
     };
 
     const handleFileSelect = (event: ChangeEvent<HTMLInputElement>, isCarte: boolean = false) => {
+        // vider les adresses de livraison ajoutées à la main et les adresses de livraison XML
+        setAdresseLivraisonsAjoutees([]);
+        setAdressesLivraisonsXml([]);
+        setPointDeRetrait(null);
         const file = event.target.files?.[0];
         if (file) {
             handleFileRead(file, isCarte);
