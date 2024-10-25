@@ -24,3 +24,9 @@ export interface Livraisons {
     entrepot: Entrepot;
     livraisons: Intersection[];
 }
+
+export interface Itineraire {
+    coursier: string;
+    livraisons: Livraisons[];
+    couleur?: string;
+}

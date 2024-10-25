@@ -1,16 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
-import '../Styles/Accueil.css';
-import Carte from './Carte.tsx';
-import { Intersection, Point } from '../Utils/points';
+import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { Box, Button } from "@mui/material";
+import { styled } from "@mui/material/styles";
 import toast, { Toaster } from "react-hot-toast";
-import { enregistrerCarte } from "../Appels_api/enregistrerCarte.ts";
-import ListeRequetesLivraisonAjoutManuel from "./ListeRequetesLivraisonAjoutManuel.tsx";
-import { enregistrerRequetesLivraisons } from "../Appels_api/enregistrerRequetesLivraisons.ts";
+
 import MailIcon from '@mui/icons-material/Mail';
 import MapIcon from '@mui/icons-material/Map';
-import {styled} from "@mui/material/styles";
-import {calculerItineraire} from "../Appels_api/calculerItineraire.ts";
+
+import { Intersection, Livraisons, Point } from '../Utils/points';
+import { enregistrerCarte } from "../Appels_api/enregistrerCarte.ts";
+import { calculerItineraire } from "../Appels_api/calculerItineraire.ts";
+import { enregistrerRequetesLivraisons } from "../Appels_api/enregistrerRequetesLivraisons.ts";
+
+import '../Styles/Accueil.css';
+import Carte from './Carte.tsx';
+import CarteTournee from "./CarteTournee.tsx";
+import ListeRequetesLivraisonAjoutManuel from "./ListeRequetesLivraisonAjoutManuel.tsx";
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -35,6 +39,8 @@ export default function Accueil() {
     const [pointDeRetrait, setPointDeRetrait] = useState<Intersection | null>(null);
     const [planCharge, setPlanCharge] = useState(false);
     const zoomToPointRef = useRef<(latitude: number, longitude: number) => void>(() => {});
+    const [itineraires, setItineraires] = useState<any[]>([]);
+    const [isTourneeCalculee, setIsTourneeCalculee] = useState(false);
 
     useEffect(() => {
         setListesTotalAdressesLivraisons([...adressesLivraisonsAjoutees, ...adressesLivraisonsXml]);
@@ -84,9 +90,6 @@ export default function Accueil() {
                     } else {
                         enregistrerRequetesLivraisons("CHARGEMENT", file)
                             .then((response) => {
-                                
-                                console.log('je ne suis pas sensé être la : ',response);
-                                
                                 const { message, data } = response;
                                 const entrepot = data.entrepot;
                                 const listeLivraisons = data.livraisons;
@@ -100,13 +103,11 @@ export default function Accueil() {
                                 };
                                 setPointDeRetrait(pointDeRetrait);
 
-                                const adressesLivraisonsMapped = listeLivraisons.map((livraison: any) => (
-                                    {
+                                const adressesLivraisonsMapped = listeLivraisons.map((livraison: any) => ({
                                     id: livraison.intersection.id,
                                     latitude: livraison.intersection.latitude,
                                     longitude: livraison.intersection.longitude,
                                     adresse: livraison.intersection.voisins.length > 0 ? livraison.intersection.voisins[0].nomRue : 'pas définie',
-                                    //todo : ajouter une deuxième adresse si il y a 2 voisins ou plus
                                     voisins: livraison.intersection.voisins
                                 }));
                                 setAdressesLivraisonsXml(adressesLivraisonsMapped);
@@ -135,24 +136,36 @@ export default function Accueil() {
         }
     };
 
-    const calculTournee = () => {
+    const calculTournee = async () => {
         if (listesTotalAdressesLivraisons.length === 0) {
             toast.error("Veuillez ajouter des adresses de livraison");
             return;
-        } else {
-            const livraisons = {
-                coursier : 2,
-                entrepot: {
-                    heureDepart: "08:00:00",
-                    intersection: pointDeRetrait
-                },
-                livraisons: listesTotalAdressesLivraisons.map(livraison => ({
-                    intersection: livraison
-                }))
-            };
-            calculerItineraire(livraisons);
-            console.log("Liste des adresses de livraison ajoutées à la main : ", livraisons
-            );
+        }
+
+        const livraisons: Livraisons = {
+            coursier: 2,
+            entrepot: {
+                heureDepart: "08:00:00",
+                intersection: pointDeRetrait
+            },
+            livraisons: listesTotalAdressesLivraisons.map(livraison => ({
+                intersection: livraison
+            }))
+        };
+
+        try {
+            const result = await calculerItineraire(livraisons);
+            console.log("Liste des adresses de livraison ajoutées à la main : ", livraisons);
+
+            // Utiliser result.data directement sans .text() puisqu'il est déjà en JSON
+            setItineraires(result.data.livraisons);  // Mettre à jour avec les données des tournées
+            setIsTourneeCalculee(true);
+            toast.success("Tournée calculée avec succès");
+
+        } catch (error) {
+            console.error("Erreur lors du calcul de la tournée :", error);
+            toast.error("Erreur lors du calcul de la tournée");
+            setIsTourneeCalculee(false);
         }
     };
 
@@ -180,7 +193,7 @@ export default function Accueil() {
                             multiple
                         />
                     </Button>
-    
+
                     {planCharge && (
                         <Button
                             component="label"
@@ -212,7 +225,7 @@ export default function Accueil() {
                                 adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
                                 adressesLivraisonsXml={adressesLivraisonsXml}
                                 adresseEntrepot={pointDeRetrait}
-                                zoomToPoint={(fn) => { zoomToPointRef.current = fn; }} // Pass the function
+                                zoomToPoint={(fn) => { zoomToPointRef.current = fn; }}
                             />
                         </Box>
 
@@ -223,7 +236,7 @@ export default function Accueil() {
                                 setAdresseLivraisonsAjoutees={setAdresseLivraisonsAjoutees}
                                 pointDeRetrait={pointDeRetrait}
                                 setPointDeRetrait={setPointDeRetrait}
-                                zoomToPoint={zoomToPointRef.current} // Pass the function
+                                zoomToPoint={zoomToPointRef.current}
                             />
                         </Box>
                     </Box>
@@ -232,12 +245,21 @@ export default function Accueil() {
                 {planCharge && (
                     <span>Nombre total de requêtes de livraisons : <b>{listesTotalAdressesLivraisons.length}</b></span>
                 )}
-                
-                <Box  className="box-buttons">
-                    <Button varia   nt="contained" color="primary" onClick={calculTournee}>
+
+                <Box className="box-buttons">
+                    <Button variant="contained" color="primary" onClick={calculTournee}>
                         Calculer la tournée
                     </Button>
                 </Box>
+
+                {isTourneeCalculee && (
+                    <CarteTournee
+                        adressesLivraisons={listesTotalAdressesLivraisons}
+                        adresseEntrepot={pointDeRetrait}
+                        zoomToPoint={zoomToPointRef.current}
+                        itineraires={itineraires}
+                    />
+                )}
             </Box>
         </Box>
     );
