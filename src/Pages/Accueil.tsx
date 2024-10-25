@@ -132,9 +132,13 @@ export default function Accueil() {
     };
 
     const handleFileSelect = (event: ChangeEvent<HTMLInputElement>, isCarte: boolean = false) => {
-        // vider les adresses de livraison ajoutées à la main et les adresses de livraison XML
-        setAdresseLivraisonsAjoutees([]);
-        setAdressesLivraisonsXml([]);
+        
+        // On supprime les anciennes livraisons si on charge une nouvelle carte
+        if(isCarte){
+            setAdressesLivraisonsXml([]);
+            setAdresseLivraisonsAjoutees([]);
+        }
+        
         setPointDeRetrait(null);
         const file = event.target.files?.[0];
         if (file) {
@@ -143,11 +147,15 @@ export default function Accueil() {
     };
 
     const calculTournee = () => {
+        if(!pointDeRetrait){
+            toast.error("Veuillez définir un entrepôt");
+            return;
+        }
         if (listesTotalAdressesLivraisons.length === 0) {
             toast.error("Veuillez ajouter des adresses de livraison");
             return;
         } else {
-            console.log("Liste des adresses de livraison ajoutées à la main : ", listesTotalAdressesLivraisons);
+            // TODO: Enregistrer les requêtes de livraisons via API 
         }
     };
 
@@ -214,6 +222,7 @@ export default function Accueil() {
                                     adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
                                     adressesLivraisonsXml={adressesLivraisonsXml}
                                     adresseEntrepot={pointDeRetrait}
+                                    setAdresseEntrepot={setPointDeRetrait}
                                     zoomToPoint={(fn) => { zoomToPointRef.current = fn; }} // Pass the function
                                 />
                             </Box>
