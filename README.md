@@ -1,5 +1,5 @@
 # OUPS_frontend
-Organisation Urbaine Pour les Services backend
+Organisation Urbaine Pour les Services frontend
 
 ## Description  
 
