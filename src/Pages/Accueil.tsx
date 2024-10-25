@@ -236,11 +236,13 @@ export default function Accueil() {
                     <span>Nombre total de requêtes de livraisons : <b>{listesTotalAdressesLivraisons.length}</b></span>
                 )}
 
-                <Box  className="box-buttons">
-                    <Button variant="contained" color="primary" onClick={calculTournee}>
-                        Calculer la tournée
-                    </Button>
-                </Box>
+                {planCharge && (
+                    <Box  className="box-buttons">
+                        <Button variant="contained" color="primary" onClick={calculTournee}>
+                            Calculer la tournée
+                        </Button>
+                    </Box>
+                )}
             </Box>
         </Box>
     );
