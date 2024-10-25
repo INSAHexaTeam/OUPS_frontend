@@ -48,6 +48,7 @@ export default function Accueil() {
 
     const loadPoints = (donnees: Blob) => {
         try {
+            setIsTourneeCalculee(false);
             const nouvellesIntersections: Intersection[] = donnees.intersections.map((point: any) => ({
                 id: point.id,
                 latitude: point.latitude,
@@ -73,6 +74,7 @@ export default function Accueil() {
     };
 
     const handleFileRead = (file: File, isCarte: boolean = false) => {
+        setIsTourneeCalculee(false);
         if (file && file.type === 'text/xml') {
             const reader = new FileReader();
             reader.onload = (e: ProgressEvent<FileReader>) => {
@@ -216,7 +218,7 @@ export default function Accueil() {
                 {message && <p className="success-message">{message}</p>}
                 {errorMessage && <p className="error-message">{errorMessage}</p>}
 
-                {points.length > 0 && (
+                {points.length > 0 && !isTourneeCalculee && (
                     <Box sx={{display: 'flex', flexDirection: 'row', gap: '2dvw'}}>
                         <Box sx={{width: '60%'}}>
                             <Carte
@@ -242,7 +244,7 @@ export default function Accueil() {
                     </Box>
                 )}
 
-                {planCharge && (
+                {planCharge && !isTourneeCalculee &&(
                     <span>Nombre total de requêtes de livraisons : <b>{listesTotalAdressesLivraisons.length}</b></span>
                 )}
 
