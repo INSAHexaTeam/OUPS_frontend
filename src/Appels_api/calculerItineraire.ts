@@ -4,8 +4,8 @@ const apiUrl = process.env.REACT_APP_API_URL;
 
 export async function calculerItineraire(listeLivraisons : Livraisons): Promise<{ message: string, data: Blob }> {
     return new Promise(async (resolve, reject) => {
-        try {
-            const req = await fetch(`http://localhost:8080/carte/calculerItineraire  `, {
+        try { //http://localhost:8080/carte/calculerItineraireCluster
+            const req = await fetch(`http://localhost:8080/carte/calculerItineraireCluster  `, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"

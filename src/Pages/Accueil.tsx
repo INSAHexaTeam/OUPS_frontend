@@ -141,7 +141,7 @@ export default function Accueil() {
             return;
         } else {
             const livraisons = {
-                coursier : 1,
+                coursier : 2,
                 entrepot: {
                     heureDepart: "08:00:00",
                     intersection: pointDeRetrait
