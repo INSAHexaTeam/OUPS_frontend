@@ -14,3 +14,13 @@ export interface Intersection {
     adresse: string;
     voisins: Voisin[];
 }
+
+export interface Entrepot {
+    heureDepart: string
+    intersection: Intersection
+}
+
+export interface Livraisons {
+    entrepot: Entrepot;
+    livraisons: Intersection[];
+}

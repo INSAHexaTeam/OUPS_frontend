@@ -10,6 +10,7 @@ import { enregistrerRequetesLivraisons } from "../Appels_api/enregistrerRequetes
 import MailIcon from '@mui/icons-material/Mail';
 import MapIcon from '@mui/icons-material/Map';
 import {styled} from "@mui/material/styles";
+import {calculerItineraire} from "../Appels_api/calculerItineraire.ts";
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -88,7 +89,7 @@ export default function Accueil() {
                                 
                                 const { message, data } = response;
                                 const entrepot = data.entrepot;
-                                const listeLivraisons = data.livraisonList;
+                                const listeLivraisons = data.livraisons;
 
                                 const pointDeRetrait = {
                                     id: entrepot.intersection.id,
@@ -99,12 +100,14 @@ export default function Accueil() {
                                 };
                                 setPointDeRetrait(pointDeRetrait);
 
-                                const adressesLivraisonsMapped = listeLivraisons.map((livraison: any) => ({
-                                    id: livraison.id,
-                                    latitude: livraison.latitude,
-                                    longitude: livraison.longitude,
-                                    adresse: livraison.voisins.length > 0 ? livraison.voisins[0].nomRue : 'pas définie',
-                                    voisins: livraison.voisins
+                                const adressesLivraisonsMapped = listeLivraisons.map((livraison: any) => (
+                                    {
+                                    id: livraison.intersection.id,
+                                    latitude: livraison.intersection.latitude,
+                                    longitude: livraison.intersection.longitude,
+                                    adresse: livraison.intersection.voisins.length > 0 ? livraison.intersection.voisins[0].nomRue : 'pas définie',
+                                    //todo : ajouter une deuxième adresse si il y a 2 voisins ou plus
+                                    voisins: livraison.intersection.voisins
                                 }));
                                 setAdressesLivraisonsXml(adressesLivraisonsMapped);
                                 toast.success(message);
@@ -145,7 +148,18 @@ export default function Accueil() {
             toast.error("Veuillez ajouter des adresses de livraison");
             return;
         } else {
-            console.log("Liste des adresses de livraison ajoutées à la main : ", listesTotalAdressesLivraisons);
+            const livraisons = {
+                entrepot: {
+                    heureDepart: "08:00:00",
+                    intersection: pointDeRetrait
+                },
+                livraisons: listesTotalAdressesLivraisons.map(livraison => ({
+                    intersection: livraison
+                }))
+            };
+            calculerItineraire(livraisons);
+            console.log("Liste des adresses de livraison ajoutées à la main : ", livraisons
+            );
         }
     };
 
@@ -166,12 +180,7 @@ export default function Accueil() {
                         <p>Glissez et déposez votre fichier carte ici</p>
                     </div>
                 )}
-
-                {/*<input*/}
-                {/*    type="file"*/}
-                {/*    accept=".xml"*/}
-                {/*    onChange={(event) => handleFileSelect(event, true)}*/}
-                {/*/>*/}
+                
 
                 <Button
                     component="label"
@@ -190,10 +199,6 @@ export default function Accueil() {
                 </Button>
 
                 {planCharge && (
-                    // <input type="file"
-                    //        accept=".xml"
-                    //        onChange={(event) => handleFileSelect(event, false)}
-                    // />
                     <Button
                         component="label"
                         role={undefined}
