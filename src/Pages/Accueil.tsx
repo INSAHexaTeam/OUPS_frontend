@@ -4,12 +4,16 @@ import Carte from './Carte.tsx';
 import { Intersection, Point } from '../Utils/points';
 import { Box, Button, CircularProgress, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
 import toast, { Toaster } from "react-hot-toast";
-import { enregistrerCarte } from "../Appels_api/enregistrerCarte.ts";
 import ListeRequetesLivraisonAjoutManuel from "./ListeRequetesLivraisonAjoutManuel.tsx";
-import { enregistrerRequetesLivraisons } from "../Appels_api/enregistrerRequetesLivraisons.ts";
 import MailIcon from '@mui/icons-material/Mail';
 import MapIcon from '@mui/icons-material/Map';
-import { styled } from "@mui/material/styles";
+import { Intersection, Livraisons, Point } from '../Utils/points';
+import { enregistrerCarte } from "../Appels_api/enregistrerCarte.ts";
+import { enregistrerRequetesLivraisons } from "../Appels_api/enregistrerRequetesLivraisons.ts";
+import '../Styles/Accueil.css';
+import Carte from './Carte.tsx';
+import ListeRequetesLivraisonAjoutManuel from "./ListeRequetesLivraisonAjoutManuel.tsx";
+import {calculerItineraire} from "../Appels_api/calculerItineraire";
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -36,6 +40,8 @@ export default function Accueil() {
     const [loading, setLoading] = useState(false);
     const [numCouriers, setNumCouriers] = useState(1); // New state for number of couriers
     const zoomToPointRef = useRef<(latitude: number, longitude: number) => void>(() => {});
+    const [itineraires, setItineraires] = useState<any[]>([]);
+    const [isTourneeCalculee, setIsTourneeCalculee] = useState(false);
 
     useEffect(() => {
         setListesTotalAdressesLivraisons([...adressesLivraisonsAjoutees, ...adressesLivraisonsXml]);
@@ -43,6 +49,7 @@ export default function Accueil() {
 
     const loadPoints = (donnees: Blob) => {
         try {
+            setIsTourneeCalculee(false);
             const nouvellesIntersections: Intersection[] = donnees.intersections.map((point: any) => ({
                 id: point.id,
                 latitude: point.latitude,
@@ -68,6 +75,7 @@ export default function Accueil() {
     };
 
     const handleFileRead = (file: File, isCarte: boolean = false) => {
+        setIsTourneeCalculee(false);
         if (file && file.type === 'text/xml') {
             const reader = new FileReader();
             reader.onload = (e: ProgressEvent<FileReader>) => {
@@ -90,32 +98,29 @@ export default function Accueil() {
                             .then((response) => {
                                 const { message, data } = response;
                                 const entrepot = data.entrepot;
-                                const listeLivraisons = data.livraisonList;
+                                const listeLivraisons = data.livraisons;
 
                                 const pointDeRetrait = {
                                     id: entrepot.intersection.id,
                                     latitude: entrepot.intersection.latitude,
                                     longitude: entrepot.intersection.longitude,
-                                    adresse: entrepot.intersection?.voisins.length > 0 ? entrepot.intersection?.voisins[0].nomRue : 'Adresse inconnue',
+                                    adresse: entrepot.intersection?.voisins.length > 0 ? entrepot.intersection?.voisins[0].nomRue : 'pas définie',
                                     voisins: entrepot.intersection?.voisins
                                 };
-
                                 setPointDeRetrait(pointDeRetrait);
 
                                 const adressesLivraisonsMapped = listeLivraisons.map((livraison: any) => ({
-                                    id: livraison.id,
-                                    latitude: livraison.latitude,
-                                    longitude: livraison.longitude,
-                                    adresse: livraison.voisins.length > 0 && livraison.voisins[0].nomRue ? livraison.voisins[0].nomRue : 'Adresse inconnue',
-                                    voisins: livraison.voisins
+                                    id: livraison.intersection.id,
+                                    latitude: livraison.intersection.latitude,
+                                    longitude: livraison.intersection.longitude,
+                                    adresse: livraison.intersection.voisins.length > 0  && livraison.intersection.voisins[0].nomRue? livraison.intersection.voisins[0].nomRue : 'Adresse inconnue',
+                                    voisins: livraison.intersection.voisins
                                 }));
-
+                                
                                 setAdressesLivraisonsXml(adressesLivraisonsMapped);
                                 toast.success(message);
-                                setLoading(false);
                             }).catch((error) => {
                             toast.error(error);
-                            setLoading(false);
                         });
                     }
                     setMessage(null);
@@ -147,7 +152,7 @@ export default function Accueil() {
         }
     };
 
-    const calculTournee = () => {
+    const calculTournee = async () => {
         if(!pointDeRetrait){
             toast.error("Veuillez définir un entrepôt");
             return;
@@ -155,8 +160,32 @@ export default function Accueil() {
         if (listesTotalAdressesLivraisons.length === 0) {
             toast.error("Veuillez ajouter des adresses de livraison");
             return;
-        } else {
-            // TODO: Enregistrer les requêtes de livraisons via API 
+        }
+
+        const livraisons: Livraisons = {
+            coursier: 4,
+            entrepot: {
+                heureDepart: "08:00:00",
+                intersection: pointDeRetrait
+            },
+            livraisons: listesTotalAdressesLivraisons.map(livraison => ({
+                intersection: livraison
+            }))
+        };
+
+        try {
+            const result = await calculerItineraire(livraisons);
+            console.log("Liste des adresses de livraison ajoutées à la main : ", livraisons);
+
+            // Utiliser result.data directement sans .text() puisqu'il est déjà en JSON
+            setItineraires(result.data.livraisons);  // Mettre à jour avec les données des tournées
+            setIsTourneeCalculee(true);
+            toast.success("Tournée calculée avec succès");
+
+        } catch (error) {
+            console.error("Erreur lors du calcul de la tournée :", error);
+            toast.error("Erreur lors du calcul de la tournée");
+            setIsTourneeCalculee(false);
         }
     };
 
@@ -184,7 +213,7 @@ export default function Accueil() {
                             multiple
                         />
                     </Button>
-
+    
                     {planCharge && (
                         <Button
                             component="label"
@@ -208,41 +237,40 @@ export default function Accueil() {
                 {errorMessage && <p className="error-message">{errorMessage}</p>}
 
                 {loading ? (
+                        <Box sx={{display: 'flex', flexDirection: 'row', gap: '2dvw'}}>
+                            <Box sx={{width: '100%', height: '400px', display: 'flex', justifyContent: 'center', alignItems:'center'}}>
+                                <CircularProgress />
+                            </Box>
+                        </Box>
+                    ) : (
+                    points.length > 0 && (
                     <Box sx={{display: 'flex', flexDirection: 'row', gap: '2dvw'}}>
-                        <Box sx={{width: '100%', height: '400px', display: 'flex', justifyContent: 'center', alignItems:'center'}}>
-                            <CircularProgress />
+                        <Box sx={{width: '60%'}}>
+                            <Carte
+                                intersections={intersections}
+                                setAdresseLivraisonsAjoutees={setAdresseLivraisonsAjoutees}
+                                adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
+                                adressesLivraisonsXml={adressesLivraisonsXml}
+                                adresseEntrepot={pointDeRetrait}
+                                zoomToPoint={(fn) => { zoomToPointRef.current = fn; }}
+                                itineraires={itineraires}
+                            />
+                        </Box>
+
+                        <Box sx={{width: '40%', overflowY: 'auto'}}>
+                            <ListeRequetesLivraisonAjoutManuel
+                                adressesLivraisonsXml={adressesLivraisonsXml}
+                                adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
+                                setAdresseLivraisonsAjoutees={setAdresseLivraisonsAjoutees}
+                                pointDeRetrait={pointDeRetrait}
+                                setPointDeRetrait={setPointDeRetrait}
+                                zoomToPoint={zoomToPointRef.current}
+                            />
                         </Box>
                     </Box>
-                ) : (
-                    points.length > 0 && (
-                        <Box sx={{display: 'flex', flexDirection: 'row', gap: '2dvw'}}>
-                            <Box sx={{width: '60%'}}>
-                                <Carte
-                                    intersections={intersections}
-                                    setAdresseLivraisonsAjoutees={setAdresseLivraisonsAjoutees}
-                                    adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
-                                    adressesLivraisonsXml={adressesLivraisonsXml}
-                                    adresseEntrepot={pointDeRetrait}
-                                    setAdresseEntrepot={setPointDeRetrait}
-                                    zoomToPoint={(fn) => { zoomToPointRef.current = fn; }} // Pass the function
-                                />
-                            </Box>
+                ))}
 
-                            <Box sx={{width: '40%', overflowY: 'auto'}}>
-                                <ListeRequetesLivraisonAjoutManuel
-                                    adressesLivraisonsXml={adressesLivraisonsXml}
-                                    adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
-                                    setAdresseLivraisonsAjoutees={setAdresseLivraisonsAjoutees}
-                                    pointDeRetrait={pointDeRetrait}
-                                    setPointDeRetrait={setPointDeRetrait}
-                                    zoomToPoint={zoomToPointRef.current} // Pass the function
-                                />
-                            </Box>
-                        </Box>
-                    )
-                )}
-
-                {planCharge && (
+                {planCharge && !isTourneeCalculee &&(
                     <span>Nombre total de requêtes de livraisons : <b>{listesTotalAdressesLivraisons.length}</b></span>
                 )}
 

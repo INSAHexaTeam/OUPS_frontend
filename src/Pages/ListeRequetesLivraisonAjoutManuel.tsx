@@ -24,6 +24,7 @@ export default function ListeRequetesLivraisonAjoutManuel({
                                                           }: ListeRequetesLivraisonAjoutManuelProps) {
 
     // Fonction pour supprimer une livraison
+    //todo ; ajouter la suppression des intersections importées
     const handleSupprimerLivraison = (id: number) => () => {
         const newAdressesLivraisons = adressesLivraisonsAjoutees.filter((livraison) => livraison.id !== id);
         setAdresseLivraisonsAjoutees(newAdressesLivraisons);
