@@ -92,6 +92,7 @@ export default function Accueil() {
                     } else {
                         enregistrerRequetesLivraisons("CHARGEMENT", file)
                             .then((response) => {
+                                console.log("Réponse de la requête de chargement des requêtes de livraison : ", response);
                                 const { message, data } = response;
                                 const entrepot = data.entrepot;
                                 const listeLivraisons = data.livraisons;
@@ -103,6 +104,7 @@ export default function Accueil() {
                                     adresse: entrepot.intersection?.voisins.length > 0 ? entrepot.intersection?.voisins[0].nomRue : 'pas définie',
                                     voisins: entrepot.intersection?.voisins
                                 };
+                                console.log("Point de retrait : ", pointDeRetrait);
                                 setPointDeRetrait(pointDeRetrait);
 
                                 const adressesLivraisonsMapped = listeLivraisons.map((livraison: any) => ({
@@ -112,6 +114,7 @@ export default function Accueil() {
                                     adresse: livraison.intersection.voisins.length > 0 ? livraison.intersection.voisins[0].nomRue : 'pas définie',
                                     voisins: livraison.intersection.voisins
                                 }));
+                                console.log("Adresses de livraison : ", adressesLivraisonsMapped);
                                 setAdressesLivraisonsXml(adressesLivraisonsMapped);
                                 toast.success(message);
                             }).catch((error) => {
@@ -145,7 +148,7 @@ export default function Accueil() {
         }
 
         const livraisons: Livraisons = {
-            coursier: 2,
+            coursier: 4,
             entrepot: {
                 heureDepart: "08:00:00",
                 intersection: pointDeRetrait
@@ -218,7 +221,9 @@ export default function Accueil() {
                 {message && <p className="success-message">{message}</p>}
                 {errorMessage && <p className="error-message">{errorMessage}</p>}
 
-                {points.length > 0 && !isTourneeCalculee && (
+                {points.length > 0 
+                    // && !isTourneeCalculee 
+                    && (
                     <Box sx={{display: 'flex', flexDirection: 'row', gap: '2dvw'}}>
                         <Box sx={{width: '60%'}}>
                             <Carte
@@ -228,6 +233,7 @@ export default function Accueil() {
                                 adressesLivraisonsXml={adressesLivraisonsXml}
                                 adresseEntrepot={pointDeRetrait}
                                 zoomToPoint={(fn) => { zoomToPointRef.current = fn; }}
+                                itineraires={itineraires}
                             />
                         </Box>
 
@@ -239,6 +245,7 @@ export default function Accueil() {
                                 pointDeRetrait={pointDeRetrait}
                                 setPointDeRetrait={setPointDeRetrait}
                                 zoomToPoint={zoomToPointRef.current}
+                                
                             />
                         </Box>
                     </Box>
@@ -254,14 +261,14 @@ export default function Accueil() {
                     </Button>
                 </Box>
 
-                {isTourneeCalculee && (
-                    <CarteTournee
-                        adressesLivraisons={listesTotalAdressesLivraisons}
-                        adresseEntrepot={pointDeRetrait}
-                        zoomToPoint={zoomToPointRef.current}
-                        itineraires={itineraires}
-                    />
-                )}
+                {/*{ isTourneeCalculee && (*/}
+                {/*    <CarteTournee*/}
+                {/*        adressesLivraisons={listesTotalAdressesLivraisons}*/}
+                {/*        adresseEntrepot={pointDeRetrait}*/}
+                {/*        zoomToPoint={zoomToPointRef.current}*/}
+                {/*        itineraires={itineraires}*/}
+                {/*    />*/}
+                {/*)}*/}
             </Box>
         </Box>
     );

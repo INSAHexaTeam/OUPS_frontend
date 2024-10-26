@@ -12,3 +12,7 @@
     color: red; /* Couleur de l'icône MUI */
     font-size: 36px; /* Taille de l'icône MUI */
 }
+.custom-div-icon {
+    background: none;
+    border: none;
+}
