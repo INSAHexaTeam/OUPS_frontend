@@ -7,13 +7,12 @@ import toast, { Toaster } from "react-hot-toast";
 import ListeRequetesLivraisonAjoutManuel from "./ListeRequetesLivraisonAjoutManuel.tsx";
 import MailIcon from '@mui/icons-material/Mail';
 import MapIcon from '@mui/icons-material/Map';
-import { Intersection, Livraisons, Point } from '../Utils/points';
+import {Livraisons } from '../Utils/points';
 import { enregistrerCarte } from "../Appels_api/enregistrerCarte.ts";
 import { enregistrerRequetesLivraisons } from "../Appels_api/enregistrerRequetesLivraisons.ts";
 import '../Styles/Accueil.css';
-import Carte from './Carte.tsx';
-import ListeRequetesLivraisonAjoutManuel from "./ListeRequetesLivraisonAjoutManuel.tsx";
-import {calculerItineraire} from "../Appels_api/calculerItineraire";
+import {calculerItineraire} from "../Appels_api/calculerItineraire.ts";
+import {styled} from "@mui/material/styles";
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -80,8 +79,9 @@ export default function Accueil() {
             const reader = new FileReader();
             reader.onload = (e: ProgressEvent<FileReader>) => {
                 if (e.target && typeof e.target.result === 'string') {
-                    setLoading(true);
+                    
                     if (isCarte) {
+                        setLoading(true);
                         enregistrerCarte("CHARGEMENT", file)
                             .then((response) => {
                                 const { message, data } = response;
@@ -163,7 +163,7 @@ export default function Accueil() {
         }
 
         const livraisons: Livraisons = {
-            coursier: 4,
+            coursier: numCouriers,
             entrepot: {
                 heureDepart: "08:00:00",
                 intersection: pointDeRetrait

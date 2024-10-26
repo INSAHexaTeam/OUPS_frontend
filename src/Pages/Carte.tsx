@@ -78,7 +78,7 @@ const Carte: React.FC<CarteProps> = ({
                                          setAdresseLivraisonsAjoutees,
                                          adresseEntrepot,
                                          setAdresseEntrepot,
-                                         zoomToPoint,                                         zoomToPoint,
+                                         zoomToPoint,
                                          itineraires
                                      }) => {
     const [zoomLevel, setZoomLevel] = useState<number>(13);
