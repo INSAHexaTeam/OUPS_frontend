@@ -6,7 +6,7 @@ import toast, { Toaster } from "react-hot-toast";
 import MailIcon from '@mui/icons-material/Mail';
 import MapIcon from '@mui/icons-material/Map';
 
-import { Intersection, Livraisons, Point } from '../Utils/points';
+import {Intersection, Itineraire, Livraisons, Point} from '../Utils/points';
 import { enregistrerCarte } from "../Appels_api/enregistrerCarte.ts";
 import { calculerItineraire } from "../Appels_api/calculerItineraire.ts";
 import { enregistrerRequetesLivraisons } from "../Appels_api/enregistrerRequetesLivraisons.ts";
@@ -15,6 +15,7 @@ import '../Styles/Accueil.css';
 import Carte from './Carte.tsx';
 import CarteTournee from "./CarteTournee.tsx";
 import ListeRequetesLivraisonAjoutManuel from "./ListeRequetesLivraisonAjoutManuel.tsx";
+import ItineraireManager from "./GestionnaireItineraire.tsx";
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -46,6 +47,12 @@ export default function Accueil() {
         setListesTotalAdressesLivraisons([...adressesLivraisonsAjoutees, ...adressesLivraisonsXml]);
     }, [adressesLivraisonsAjoutees, adressesLivraisonsXml]);
 
+
+    const handleItinerairesChange = (newItineraires: Itineraire[]) => {
+        setItineraires(newItineraires);
+        // Appeler votre API ou mettre à jour la carte ici
+    };
+    
     const loadPoints = (donnees: Blob) => {
         try {
             setIsTourneeCalculee(false);
@@ -260,6 +267,11 @@ export default function Accueil() {
                         Calculer la tournée
                     </Button>
                 </Box>
+
+                <ItineraireManager
+                    itineraires={itineraires}
+                    onItinerairesChange={handleItinerairesChange}
+                />
 
                 {/*{ isTourneeCalculee && (*/}
                 {/*    <CarteTournee*/}
