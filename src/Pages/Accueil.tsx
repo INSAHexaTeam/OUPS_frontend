@@ -13,6 +13,7 @@ import { enregistrerRequetesLivraisons } from "../Appels_api/enregistrerRequetes
 import '../Styles/Accueil.css';
 import {calculerItineraire} from "../Appels_api/calculerItineraire.ts";
 import {styled} from "@mui/material/styles";
+import ItineraireManager from "./GestionnaireItineraire.tsx";
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -45,6 +46,11 @@ export default function Accueil() {
     useEffect(() => {
         setListesTotalAdressesLivraisons([...adressesLivraisonsAjoutees, ...adressesLivraisonsXml]);
     }, [adressesLivraisonsAjoutees, adressesLivraisonsXml]);
+
+    const handleItinerairesChange = (newItineraires: Itineraire[]) => {
+        setItineraires(newItineraires);
+        // Appeler votre API ou mettre à jour la carte ici
+    };
 
     const loadPoints = (donnees: Blob) => {
         try {
@@ -292,9 +298,16 @@ export default function Accueil() {
                         <Button variant="contained" color="primary" onClick={calculTournee}>
                             Calculer la tournée
                         </Button>
+                        
                     </Box>
                 )}
+                <ItineraireManager
+                    itineraires={itineraires}
+                    onItinerairesChange={handleItinerairesChange}
+                />
             </Box>
+
+           
         </Box>
     );
 }

@@ -121,65 +121,111 @@ const ItineraireManager: React.FC<ItineraireManagerProps> = ({ itineraires, onIt
     };
 
     return (
-        <Box sx={{ maxWidth: 800, margin: 'auto', padding: 2 }}>
+        <Box sx={{ margin: 'auto', padding: 2 }}>
     <Typography variant="h4" gutterBottom>
     Gestion des Itinéraires
     </Typography>
 
-    <DragDropContext onDragEnd={handleDragEnd}>
-    {itineraires.map((itineraire, index) => (
-            <Accordion key={index} defaultExpanded>
-    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-    <Typography color="primary" variant="h6">
-        Coursier {index + 1} ({itineraire.livraisons.livraisons.length} livraisons)
-    </Typography>
-    </AccordionSummary>
-    <AccordionDetails>
-    <Droppable droppableId={index.toString()}>
-        {(provided) => (
-        <List
-            ref={provided.innerRef}
-    {...provided.droppableProps}
->
-    {itineraire.livraisons.livraisons.map((livraison, livraisonIndex) => (
-        <Draggable
-            key={`${livraison.intersection.id}`}
-        draggableId={`${livraison.intersection.id}`}
-        index={livraisonIndex}
-            >
-            {(provided) => (
-        <ListItem
-            ref={provided.innerRef}
-        {...provided.draggableProps}
-        sx={{
-        bgcolor: 'background.paper',
-            mb: 1,
-            borderRadius: 1,
-            boxShadow: 1
-    }}
-    >
-        <IconButton {...provided.dragHandleProps}>
-        <DragHandleIcon />
-        </IconButton>
-        <ListItemText
-        primary={`Livraison ${livraisonIndex + 1}`}
-        secondary={`ID: ${livraison.intersection.id}${livraison.intersection.adresse ? ` - ${livraison.intersection.adresse}` : ''}`}
-        />
-        <IconButton onClick={() => handleEditLivraison(livraison, index)}>
-        <EditLocationIcon />
-        </IconButton>
-        </ListItem>
-    )}
-        </Draggable>
-    ))}
-    {provided.placeholder}
-    </List>
-)}
-    </Droppable>
-    </AccordionDetails>
-    </Accordion>
-))}
-    </DragDropContext>
+            <DragDropContext onDragEnd={handleDragEnd}>
+                <Box sx={{
+                    display: 'flex',
+                    gap: 2,
+                    overflowX: 'auto',
+                    pb: 2 // padding bottom pour la scrollbar
+                }}>
+                    {itineraires.map((itineraire, index) => (
+                        <Card key={index} sx={{
+                            minWidth: 300,
+                            maxWidth: 350,
+                            backgroundColor: 'background.default'
+                        }}>
+                            <CardContent>
+                                <Typography color="primary" variant="h6" gutterBottom>
+                                    Coursier {index + 1}
+                                </Typography>
+                                <Typography color="text.secondary" gutterBottom>
+                                    {itineraire.livraisons.livraisons.length} livraisons
+                                </Typography>
+
+                                <Droppable droppableId={index.toString()}>
+                                    {(provided: DroppableProvided) => (
+                                        <List
+                                            ref={provided.innerRef}
+                                            {...provided.droppableProps}
+                                            sx={{
+                                                bgcolor: 'background.paper',
+                                                borderRadius: 1,
+                                                minHeight: 400, // hauteur minimale pour faciliter le drag & drop
+                                                maxHeight: 'calc(100vh - 250px)', // hauteur maximum avec scroll
+                                                overflowY: 'auto'
+                                            }}
+                                        >
+                                            {itineraire.livraisons.livraisons.map((livraison, livraisonIndex) => (
+                                                <Draggable
+                                                    key={livraison.intersection.id.toString()}
+                                                    draggableId={livraison.intersection.id.toString()}
+                                                    index={livraisonIndex}
+                                                >
+                                                    {(provided: DraggableProvided) => (
+                                                        <ListItem
+                                                            ref={provided.innerRef}
+                                                            {...provided.draggableProps}
+                                                            {...provided.dragHandleProps}
+                                                            sx={{
+                                                                my: 1,
+                                                                border: 1,
+                                                                borderColor: 'divider',
+                                                                borderRadius: 1,
+                                                                bgcolor: 'white'
+                                                            }}
+                                                        >
+                                                            <Box sx={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                width: '100%'
+                                                            }}>
+                                                                <DragHandleIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                                                                <Box sx={{ flexGrow: 1 }}>
+                                                                    <Typography variant="body1">
+                                                                        Livraison {livraisonIndex + 1}
+                                                                    </Typography>
+                                                                    <Typography variant="body2" color="text.secondary">
+                                                                        ID: {livraison.intersection.id}
+                                                                    </Typography>
+                                                                    {livraison.intersection.adresse && (
+                                                                        <Typography
+                                                                            variant="body2"
+                                                                            color="text.secondary"
+                                                                            sx={{
+                                                                                whiteSpace: 'nowrap',
+                                                                                overflow: 'hidden',
+                                                                                textOverflow: 'ellipsis'
+                                                                            }}
+                                                                        >
+                                                                            {livraison.intersection.adresse}
+                                                                        </Typography>
+                                                                    )}
+                                                                </Box>
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={() => handleEditLivraison(livraison, index)}
+                                                                >
+                                                                    <EditLocationIcon />
+                                                                </IconButton>
+                                                            </Box>
+                                                        </ListItem>
+                                                    )}
+                                                </Draggable>
+                                            ))}
+                                            {provided.placeholder}
+                                        </List>
+                                    )}
+                                </Droppable>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </Box>
+            </DragDropContext>
 
     <Dialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)}>
     <DialogTitle>Modifier la livraison</DialogTitle>
