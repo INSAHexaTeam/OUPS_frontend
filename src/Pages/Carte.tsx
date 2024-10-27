@@ -12,6 +12,7 @@ interface CarteProps {
     adressesLivraisonsXml: Intersection[];
     setAdresseLivraisonsAjoutees: (adresses: Intersection[]) => void;
     adresseEntrepot: Intersection | null;
+    setAdresseEntrepot : (adresse: Intersection) => void;
     zoomToPoint: (latitude: number, longitude: number) => void; // New prop
     itineraires: {
         cheminIntersections: Intersection[];
@@ -76,6 +77,7 @@ const Carte: React.FC<CarteProps> = ({
                                          adressesLivraisonsXml,
                                          setAdresseLivraisonsAjoutees,
                                          adresseEntrepot,
+                                         setAdresseEntrepot,
                                          zoomToPoint,
                                          itineraires
                                      }) => {
@@ -90,8 +92,12 @@ const Carte: React.FC<CarteProps> = ({
     const ajouterBouton = (id: number, longitude: number, latitude: number, adresse: string) => {
         const adresseExiste = adressesLivraisonsAjoutees.some((livraison) => livraison.id === id);
         if (!adresseExiste) {
-            setAdresseLivraisonsAjoutees([...adressesLivraisonsAjoutees,
-                { id: id, longitude: longitude, latitude: latitude, adresse: adresse }]);
+            if (!adresseEntrepot) {
+                setAdresseEntrepot({ id: id, longitude: longitude, latitude: latitude, adresse: adresse });
+            }else{
+                setAdresseLivraisonsAjoutees([...adressesLivraisonsAjoutees,
+                    { id: id, longitude: longitude, latitude: latitude, adresse: adresse }]);
+            }
         }
     };
 
@@ -267,7 +273,10 @@ const Carte: React.FC<CarteProps> = ({
                         <br/>
                         <span><b>{`Adresse : ${intersection.adresse}`}</b><br/></span>
                         <Button onClick={() =>
-                            ajouterBouton(intersection.id, intersection.longitude, intersection.latitude, intersection.adresse)}>Ajouter</Button>
+                            ajouterBouton(intersection.id, intersection.longitude, intersection.latitude, intersection.adresse)}
+                        >
+                            {adresseEntrepot ? 'Ajouter une livraison' : 'Définir comme entrepôt'}
+                        </Button>
                     </Popup>
                 </Marker>
             ))}

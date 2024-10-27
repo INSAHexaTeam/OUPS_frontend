@@ -1,70 +1,20 @@
-# Getting Started with Create React App
+# OUPS_frontend
+Organisation Urbaine Pour les Services frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Description  
 
-## Available Scripts
+Cette application est conçue pour optimiser les itinéraires de livraison urbains à vélo, favorisant ainsi une mobilité plus durable dans les villes. Les utilisateurs téléchargent un fichier XML décrivant le plan de la ville, avec des informations sur les intersections et les segments de route. Les livreurs démarrent leurs tournées depuis l’entrepôt principal. 
 
-In the project directory, you can run:
+L'application permet de gérer les demandes de livraison, de les attribuer à différents livreurs et de calculer l'itinéraire optimal, en tenant compte des délais de collecte et de livraison et d'une vitesse constante de 15 km/h. Les itinéraires sont optimisés pour réduire le temps total de retour à l’entrepôt. L'utilisateur peut visualiser les itinéraires sur une carte interactive et a la possibilité de sauvegarder ou de restaurer les itinéraires planifiés. 
 
-### `npm start`
+## Algorithme 
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+L'application représente les différentes intersections de la ville sous forme d'un graphe afin de pouvoir calculer les itinéraires de livraison sous forme de sous-graphiques. Chaque intersection est modélisée comme un nœud et chaque segment de route comme un arc entre deux nœuds.   
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+Le calcul des itinéraires s'effectue en deux phases. Tout d’abord, le graphique des chemins les plus courts est généré à partir des points de collecte et de livraison et du plan de la ville. Ce graphique orienté comprend un nœud pour chaque point d'intérêt. Dans la deuxième phase, le problème du voyageur de commerce (TSP) est résolu, déterminant l'ordre optimal pour minimiser le temps total du parcours. Cet algorithme doit satisfaire aux contraintes de préséance entre les points de retrait et de livraison. Pour la résolution, des algorithmes exacts et heuristiques peuvent être utilisés, qui offrent des solutions approximatives avec une plus grande efficacité. 
 
-### `npm test`
+## Technologies 
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Le projet utilisera React pour le front-end, choisi pour sa fluidité, son routage dynamique et sa large communauté. Pour le back-end, le framework Java Spring Boot a été retenu pour sa compatibilité avec Java, ses serveurs web embarqués, et sa facilité d'intégration des dépendances. 
 
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+L'architecture générale repose sur une application web qui effectue des requêtes HTTP vers une API, laquelle récupère ses données depuis des fichiers XML. Cette approche garantit une indépendance totale entre les différents services, facilitant ainsi la collaboration et la maintenabilité du projet. 

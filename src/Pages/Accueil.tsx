@@ -1,21 +1,18 @@
 import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
-import { Box, Button } from "@mui/material";
-import { styled } from "@mui/material/styles";
-import toast, { Toaster } from "react-hot-toast";
-
-import MailIcon from '@mui/icons-material/Mail';
-import MapIcon from '@mui/icons-material/Map';
-
-import {Intersection, Itineraire, Livraisons, Point} from '../Utils/points';
-import { enregistrerCarte } from "../Appels_api/enregistrerCarte.ts";
-import { calculerItineraire } from "../Appels_api/calculerItineraire.ts";
-import { enregistrerRequetesLivraisons } from "../Appels_api/enregistrerRequetesLivraisons.ts";
-
 import '../Styles/Accueil.css';
 import Carte from './Carte.tsx';
-import CarteTournee from "./CarteTournee.tsx";
+import { Intersection, Point } from '../Utils/points';
+import { Box, Button, CircularProgress, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
+import toast, { Toaster } from "react-hot-toast";
 import ListeRequetesLivraisonAjoutManuel from "./ListeRequetesLivraisonAjoutManuel.tsx";
-import ItineraireManager from "./GestionnaireItineraire.tsx";
+import MailIcon from '@mui/icons-material/Mail';
+import MapIcon from '@mui/icons-material/Map';
+import {Livraisons } from '../Utils/points';
+import { enregistrerCarte } from "../Appels_api/enregistrerCarte.ts";
+import { enregistrerRequetesLivraisons } from "../Appels_api/enregistrerRequetesLivraisons.ts";
+import '../Styles/Accueil.css';
+import {calculerItineraire} from "../Appels_api/calculerItineraire.ts";
+import {styled} from "@mui/material/styles";
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -39,6 +36,8 @@ export default function Accueil() {
     const [listesTotalAdressesLivraisons, setListesTotalAdressesLivraisons] = useState<Intersection[]>([]);
     const [pointDeRetrait, setPointDeRetrait] = useState<Intersection | null>(null);
     const [planCharge, setPlanCharge] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [numCouriers, setNumCouriers] = useState(1); // New state for number of couriers
     const zoomToPointRef = useRef<(latitude: number, longitude: number) => void>(() => {});
     const [itineraires, setItineraires] = useState<any[]>([]);
     const [isTourneeCalculee, setIsTourneeCalculee] = useState(false);
@@ -47,12 +46,6 @@ export default function Accueil() {
         setListesTotalAdressesLivraisons([...adressesLivraisonsAjoutees, ...adressesLivraisonsXml]);
     }, [adressesLivraisonsAjoutees, adressesLivraisonsXml]);
 
-
-    const handleItinerairesChange = (newItineraires: Itineraire[]) => {
-        setItineraires(newItineraires);
-        // Appeler votre API ou mettre à jour la carte ici
-    };
-    
     const loadPoints = (donnees: Blob) => {
         try {
             setIsTourneeCalculee(false);
@@ -86,20 +79,23 @@ export default function Accueil() {
             const reader = new FileReader();
             reader.onload = (e: ProgressEvent<FileReader>) => {
                 if (e.target && typeof e.target.result === 'string') {
+                    
                     if (isCarte) {
+                        setLoading(true);
                         enregistrerCarte("CHARGEMENT", file)
                             .then((response) => {
                                 const { message, data } = response;
                                 loadPoints(data);
                                 toast.success(message);
+                                setLoading(false);
                             }).catch((error) => {
                             toast.error(error);
+                            setLoading(false);
                         });
                         setPlanCharge(true);
                     } else {
                         enregistrerRequetesLivraisons("CHARGEMENT", file)
                             .then((response) => {
-                                console.log("Réponse de la requête de chargement des requêtes de livraison : ", response);
                                 const { message, data } = response;
                                 const entrepot = data.entrepot;
                                 const listeLivraisons = data.livraisons;
@@ -111,17 +107,16 @@ export default function Accueil() {
                                     adresse: entrepot.intersection?.voisins.length > 0 ? entrepot.intersection?.voisins[0].nomRue : 'pas définie',
                                     voisins: entrepot.intersection?.voisins
                                 };
-                                console.log("Point de retrait : ", pointDeRetrait);
                                 setPointDeRetrait(pointDeRetrait);
 
                                 const adressesLivraisonsMapped = listeLivraisons.map((livraison: any) => ({
                                     id: livraison.intersection.id,
                                     latitude: livraison.intersection.latitude,
                                     longitude: livraison.intersection.longitude,
-                                    adresse: livraison.intersection.voisins.length > 0 ? livraison.intersection.voisins[0].nomRue : 'pas définie',
+                                    adresse: livraison.intersection.voisins.length > 0  && livraison.intersection.voisins[0].nomRue? livraison.intersection.voisins[0].nomRue : 'Adresse inconnue',
                                     voisins: livraison.intersection.voisins
                                 }));
-                                console.log("Adresses de livraison : ", adressesLivraisonsMapped);
+                                
                                 setAdressesLivraisonsXml(adressesLivraisonsMapped);
                                 toast.success(message);
                             }).catch((error) => {
@@ -134,6 +129,7 @@ export default function Accueil() {
             };
             reader.onerror = () => {
                 setErrorMessage('Erreur de lecture du fichier');
+                setLoading(false);
             };
             reader.readAsText(file);
         } else {
@@ -142,6 +138,14 @@ export default function Accueil() {
     };
 
     const handleFileSelect = (event: ChangeEvent<HTMLInputElement>, isCarte: boolean = false) => {
+        
+        // On supprime les anciennes livraisons si on charge une nouvelle carte
+        if(isCarte){
+            setAdressesLivraisonsXml([]);
+            setAdresseLivraisonsAjoutees([]);
+        }
+        
+        setPointDeRetrait(null);
         const file = event.target.files?.[0];
         if (file) {
             handleFileRead(file, isCarte);
@@ -149,13 +153,17 @@ export default function Accueil() {
     };
 
     const calculTournee = async () => {
+        if(!pointDeRetrait){
+            toast.error("Veuillez définir un entrepôt");
+            return;
+        }
         if (listesTotalAdressesLivraisons.length === 0) {
             toast.error("Veuillez ajouter des adresses de livraison");
             return;
         }
 
         const livraisons: Livraisons = {
-            coursier: 4,
+            coursier: numCouriers,
             entrepot: {
                 heureDepart: "08:00:00",
                 intersection: pointDeRetrait
@@ -205,7 +213,7 @@ export default function Accueil() {
                             multiple
                         />
                     </Button>
-
+    
                     {planCharge && (
                         <Button
                             component="label"
@@ -228,9 +236,14 @@ export default function Accueil() {
                 {message && <p className="success-message">{message}</p>}
                 {errorMessage && <p className="error-message">{errorMessage}</p>}
 
-                {points.length > 0 
-                    // && !isTourneeCalculee 
-                    && (
+                {loading ? (
+                        <Box sx={{display: 'flex', flexDirection: 'row', gap: '2dvw'}}>
+                            <Box sx={{width: '100%', height: '400px', display: 'flex', justifyContent: 'center', alignItems:'center'}}>
+                                <CircularProgress />
+                            </Box>
+                        </Box>
+                    ) : (
+                    points.length > 0 && (
                     <Box sx={{display: 'flex', flexDirection: 'row', gap: '2dvw'}}>
                         <Box sx={{width: '60%'}}>
                             <Carte
@@ -252,35 +265,35 @@ export default function Accueil() {
                                 pointDeRetrait={pointDeRetrait}
                                 setPointDeRetrait={setPointDeRetrait}
                                 zoomToPoint={zoomToPointRef.current}
-                                
                             />
                         </Box>
                     </Box>
-                )}
+                ))}
 
                 {planCharge && !isTourneeCalculee &&(
                     <span>Nombre total de requêtes de livraisons : <b>{listesTotalAdressesLivraisons.length}</b></span>
                 )}
 
-                <Box className="box-buttons">
-                    <Button variant="contained" color="primary" onClick={calculTournee}>
-                        Calculer la tournée
-                    </Button>
-                </Box>
-
-                <ItineraireManager
-                    itineraires={itineraires}
-                    onItinerairesChange={handleItinerairesChange}
-                />
-
-                {/*{ isTourneeCalculee && (*/}
-                {/*    <CarteTournee*/}
-                {/*        adressesLivraisons={listesTotalAdressesLivraisons}*/}
-                {/*        adresseEntrepot={pointDeRetrait}*/}
-                {/*        zoomToPoint={zoomToPointRef.current}*/}
-                {/*        itineraires={itineraires}*/}
-                {/*    />*/}
-                {/*)}*/}
+                {planCharge && (
+                    <Box className="box-buttons" sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <FormControl variant="outlined" size="medium" sx={{width: '140px'}}>
+                            <InputLabel>Nombre de coursiers</InputLabel>
+                            <Select
+                                value={numCouriers}
+                                onChange={(e) => setNumCouriers(e.target.value as number)}
+                                label="Nombre de coursiers"
+                                sx={{height: '40px'}}
+                            >
+                                {[1, 2, 3, 4, 5].map((num) => (
+                                    <MenuItem key={num} value={num}>{num}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                        <Button variant="contained" color="primary" onClick={calculTournee}>
+                            Calculer la tournée
+                        </Button>
+                    </Box>
+                )}
             </Box>
         </Box>
     );

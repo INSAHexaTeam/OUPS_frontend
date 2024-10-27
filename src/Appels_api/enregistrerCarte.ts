@@ -8,11 +8,9 @@ export async function enregistrerCarte(etat : string, file : File | null): Promi
                 resolve({ message: "Fichier non trouvé", data: new Blob() });
             }
             const requestParams : string = `?cheminVersFichier=${cheminVersFichier}&etat=${etat}`;
-            console.log("requestParams", requestParams);
             const req = await fetch(`http://localhost:8080/carte/charger${requestParams}`, {
                 method: "POST"
             });
-            console.log("req", req);
 
             // Si la réponse n'est pas OK, on gère les erreurs (s'il y a des erreurs)
             if (!req.ok) {
