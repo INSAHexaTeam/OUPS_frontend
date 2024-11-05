@@ -13,9 +13,9 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 
 
-export const drawerWidth = 250;
-export const drawerCloseWidth = 73;
-export const DrawerHeader = styled("div")(({ theme }) => ({
+export const largeurDrawer = 250;
+export const largeurCloseDrawer = 73;
+export const EnTeteDrawer = styled("div")(({ theme }) => ({
     display: "flex",
     alignItems: "center",
     justifyContent: "flex-end",
@@ -42,7 +42,7 @@ export const Drawer = styled(MuiDrawer, {
 }));
 
 const openedMixin = (theme) => ({
-    width: drawerWidth,
+    width: largeurDrawer,
     transition: theme.transitions.create("width", {
         easing: theme.transitions.easing.sharp,
         duration: theme.transitions.duration.enteringScreen,
@@ -63,17 +63,17 @@ const closedMixin = (theme) => ({
 });
 
 export default function DrawerBar({ selected }) {
-    const [open, setOpen] = React.useState(false);
+    const [ouvert, setOuvert] = React.useState(false);
 
     const handleDrawer = () => {
-        setOpen(!open);
+        setOuvert(!ouvert);
     };
 
-    const [userLevel, setUserLevel] = React.useState([]);
+    const [niveauUtilisateur, setNiveauUtilisateur] = React.useState([]);
 
     const navigate = useNavigate();
 
-    const menuItems = [
+    const elementsMenu = [
         { idx: 0, text: "Profil", icon: <AccountBoxIcon />, link: "/home" },
         {
             idx: 1,
@@ -101,26 +101,26 @@ export default function DrawerBar({ selected }) {
         },
     ];
 
-    const handleClickLink = (event) => {
+    const gererClicLien = (event) => {
         const text = event.currentTarget.textContent;
-        const index = menuItems.findIndex((item) => item.text === text);
-        const link = menuItems[index].link;
+        const index = elementsMenu.findIndex((item) => item.text === text);
+        const link = elementsMenu[index].link;
         navigate(link);
     };
 
-    let lowerButton = ["Déconnexion"];
-    const user = JSON.parse(localStorage.getItem("user"));
+    let boutonInferieur = ["Déconnexion"];
+    const utilisateur = JSON.parse(localStorage.getItem("utilisateur"));
 
-    if (user !== null) {
-        lowerButton =
-            user.role.id === 1 ? ["Variables", "Déconnexion"] : ["Déconnexion"];
+    if (utilisateur !== null) {
+        boutonInferieur =
+        utilisateur.role.id === 1 ? ["Variables", "Déconnexion"] : ["Déconnexion"];
     }
 
     return (
         <Drawer
             className="drawer"
             variant="permanent"
-            open={open}
+            open={ouvert}
             sx={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -129,7 +129,7 @@ export default function DrawerBar({ selected }) {
             }}
         >
             <Toaster />
-            <DrawerHeader>
+            <EnTeteDrawer>
                 <div
                     style={{
                         display: "flex",
@@ -148,12 +148,12 @@ export default function DrawerBar({ selected }) {
                     >
                         
                         <IconButton onClick={handleDrawer}>
-                            {open ? <ChevronLeftIcon /> : <ChevronRightIcon />}
+                            {ouvert ? <ChevronLeftIcon /> : <ChevronRightIcon />}
                         </IconButton>
                     </div>
                     
                 </div>
-            </DrawerHeader>
+            </EnTeteDrawer>
             
         </Drawer>
     );

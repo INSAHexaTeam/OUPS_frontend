@@ -2,17 +2,17 @@ import {Form} from "react-router-dom";
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
-export async function enregistrerLivraisons(etat : string, file : File | null, filepath?: string): Promise<{ message: string, data: Blob }> {
+export async function enregistrerLivraisons(etat : string, fichier : File | null, cheminFichier?: string): Promise<{ message: string, data: Blob }> {
     return new Promise(async (resolve, reject) => {
         try {
-            console.log("file", file);
+            console.log("Fichier", fichier);
             const formData = new FormData();
             formData.append("etat", etat);
-            if (file) {
-                formData.append("fichier", file);
+            if (fichier) {
+                formData.append("fichier", fichier);
             }
-            if (filepath) {
-                formData.append("cheminVersFichier", filepath);
+            if (cheminFichier) {
+                formData.append("cheminVersFichier", cheminFichier);
             }
             
             const req = await fetch(`http://localhost:8080/carte/livraisons  `, {
@@ -22,8 +22,8 @@ export async function enregistrerLivraisons(etat : string, file : File | null, f
 
             // Si la réponse n'est pas OK, on gère les erreurs (s'il y a des erreurs)
             if (!req.ok) {
-                const result = await req.json();
-                return reject(result);  // Typiquement ici on utilise return pour quitter l'exécution
+                const resultat = await req.json();
+                return reject(resultat);  // Typiquement ici on utilise return pour quitter l'exécution
             }
 
             // La réponse est un blob (CSV), donc on retourne le blob directement

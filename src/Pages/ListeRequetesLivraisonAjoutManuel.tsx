@@ -8,31 +8,42 @@ import { DataGrid, GridActionsCellItem, GridColDef } from "@mui/x-data-grid";
 interface ListeRequetesLivraisonAjoutManuelProps {
     adressesLivraisonsXml: Intersection[];
     adressesLivraisonsAjoutees: Intersection[];
+    setAdresseLivraisonsXml: (adressesLivraisons: Intersection[]) => void;
     setAdresseLivraisonsAjoutees: (adressesLivraisons: Intersection[]) => void;
     pointDeRetrait: Intersection; // correspond à l'entrepôt
     setPointDeRetrait: (pointDeRetrait: Intersection) => void;
-    zoomToPoint: (latitude: number, longitude: number) => void;
+    zoomerVersPoint: (latitude: number, longitude: number) => void;
 }
 
 export default function ListeRequetesLivraisonAjoutManuel({
                                                               adressesLivraisonsXml,
+                                                              setAdresseLivraisonsXml,
                                                               adressesLivraisonsAjoutees,
                                                               setAdresseLivraisonsAjoutees,
                                                               pointDeRetrait,
                                                               setPointDeRetrait,
-                                                              zoomToPoint
+                                                              zoomerVersPoint
                                                           }: ListeRequetesLivraisonAjoutManuelProps) {
 
     // Fonction pour supprimer une livraison
-    //todo ; ajouter la suppression des intersections importées
-    const handleSupprimerLivraison = (id: number) => () => {
-        const newAdressesLivraisons = adressesLivraisonsAjoutees.filter((livraison) => livraison.id !== id);
-        setAdresseLivraisonsAjoutees(newAdressesLivraisons);
+    const gererSuppressionLivraison = (id: number) => () => {
+        // Verifier dans quelle liste se trouve l'adresse à supprimer (xml ou ajoutées)
+        const isAdresseXml = adressesLivraisonsXml.some((livraison) => livraison.id === id);
+        
+        if(isAdresseXml) {
+          // Supprimer l'adresse de la liste des adresses xml
+            const newAdressesLivraisons = adressesLivraisonsXml.filter((livraison) => livraison.id !== id);
+            setAdresseLivraisonsXml(newAdressesLivraisons);
+        }else {
+            // Supprimer l'adresse de la liste des adresses ajoutées
+            const newAdressesLivraisons = adressesLivraisonsAjoutees.filter((livraison) => livraison.id !== id);
+            setAdresseLivraisonsAjoutees(newAdressesLivraisons);
+        }
     };
 
-    const handleRowClick = (params) => {
+    const gererClicLigne = (params) => {
         const { latitude, longitude } = params.row;
-        zoomToPoint(latitude, longitude);
+        zoomerVersPoint(latitude, longitude);
     };
 
     // L'entrepôt est affiché en premier dans la liste puis les adresses de livraison xml
@@ -71,11 +82,11 @@ export default function ListeRequetesLivraisonAjoutManuel({
             headerName: "Suppression",
             width: 100,
             getActions: ({ id, row }) => {
-                if (row.isRetrait || row.isLivraisonXml) return [];
+                if (row.isRetrait) return [];
                 return [
                     <GridActionsCellItem
                         icon={<DeleteRoundedIcon />}
-                        onClick={handleSupprimerLivraison(id)}
+                        onClick={gererSuppressionLivraison(id)}
                         color="error"
                     />,
                 ];
@@ -90,7 +101,7 @@ export default function ListeRequetesLivraisonAjoutManuel({
                 columns={columns}
                 hideFooterPagination
                 disableSelectionOnClick
-                onRowClick={handleRowClick}
+                onRowClick={gererClicLigne}
                 getRowClassName={(params) => params.indexRelativeToCurrentPage === 0 ? 'first-row' : ''}
                 sx={{
                     '& .MuiDataGrid-root': {
