@@ -261,6 +261,7 @@ export default function Accueil() {
                             <ListeRequetesLivraisonAjoutManuel
                                 adressesLivraisonsXml={adressesLivraisonsXml}
                                 adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
+                                setAdresseLivraisonsXml={setAdressesLivraisonsXml}
                                 setAdresseLivraisonsAjoutees={setAdresseLivraisonsAjoutees}
                                 pointDeRetrait={pointDeRetrait}
                                 setPointDeRetrait={setPointDeRetrait}

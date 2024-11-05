@@ -8,6 +8,7 @@ import { DataGrid, GridActionsCellItem, GridColDef } from "@mui/x-data-grid";
 interface ListeRequetesLivraisonAjoutManuelProps {
     adressesLivraisonsXml: Intersection[];
     adressesLivraisonsAjoutees: Intersection[];
+    setAdresseLivraisonsXml: (adressesLivraisons: Intersection[]) => void;
     setAdresseLivraisonsAjoutees: (adressesLivraisons: Intersection[]) => void;
     pointDeRetrait: Intersection; // correspond à l'entrepôt
     setPointDeRetrait: (pointDeRetrait: Intersection) => void;
@@ -16,6 +17,7 @@ interface ListeRequetesLivraisonAjoutManuelProps {
 
 export default function ListeRequetesLivraisonAjoutManuel({
                                                               adressesLivraisonsXml,
+                                                              setAdresseLivraisonsXml,
                                                               adressesLivraisonsAjoutees,
                                                               setAdresseLivraisonsAjoutees,
                                                               pointDeRetrait,
@@ -24,10 +26,19 @@ export default function ListeRequetesLivraisonAjoutManuel({
                                                           }: ListeRequetesLivraisonAjoutManuelProps) {
 
     // Fonction pour supprimer une livraison
-    //todo ; ajouter la suppression des intersections importées
     const gererSuppressionLivraison = (id: number) => () => {
-        const newAdressesLivraisons = adressesLivraisonsAjoutees.filter((livraison) => livraison.id !== id);
-        setAdresseLivraisonsAjoutees(newAdressesLivraisons);
+        // Verifier dans quelle liste se trouve l'adresse à supprimer (xml ou ajoutées)
+        const isAdresseXml = adressesLivraisonsXml.some((livraison) => livraison.id === id);
+        
+        if(isAdresseXml) {
+          // Supprimer l'adresse de la liste des adresses xml
+            const newAdressesLivraisons = adressesLivraisonsXml.filter((livraison) => livraison.id !== id);
+            setAdresseLivraisonsXml(newAdressesLivraisons);
+        }else {
+            // Supprimer l'adresse de la liste des adresses ajoutées
+            const newAdressesLivraisons = adressesLivraisonsAjoutees.filter((livraison) => livraison.id !== id);
+            setAdresseLivraisonsAjoutees(newAdressesLivraisons);
+        }
     };
 
     const gererClicLigne = (params) => {
@@ -71,7 +82,7 @@ export default function ListeRequetesLivraisonAjoutManuel({
             headerName: "Suppression",
             width: 100,
             getActions: ({ id, row }) => {
-                if (row.isRetrait || row.isLivraisonXml) return [];
+                if (row.isRetrait) return [];
                 return [
                     <GridActionsCellItem
                         icon={<DeleteRoundedIcon />}
