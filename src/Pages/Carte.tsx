@@ -218,11 +218,11 @@ const Carte: React.FC<CarteProps> = ({
 
                         {/* Marqueurs pour les points de livraison */}
                         {itineraire.livraisons.livraisons
-                            .filter(livraison => livraison.estUneLivraison)
+                            .filter(livraison => livraison?.estUneLivraison)
                             .map((livraison, livraisonIndex) => {
                                 const [offsetLat, offsetLng] = offsetLatLng(
-                                    livraison.intersection.latitude,
-                                    livraison.intersection.longitude,
+                                    livraison?.intersection?.latitude,
+                                    livraison?.intersection?.longitude,
                                     offset,
                                     offset
                                 );
@@ -256,7 +256,7 @@ const Carte: React.FC<CarteProps> = ({
                                     >
                                         <Popup>
                                             <div>Point de livraison {livraisonIndex + 1}</div>
-                                            <div>ID: {livraison.intersection.id}</div>
+                                            <div>ID: {livraison?.intersection?.id}</div>
                                         </Popup>
                                     </Marker>
                                 );

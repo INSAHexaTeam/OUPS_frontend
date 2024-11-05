@@ -50,6 +50,11 @@ export default function Accueil() {
         setListesTotalAdressesLivraisons([...adressesLivraisonsAjoutees, ...adressesLivraisonsXml]);
     }, [adressesLivraisonsAjoutees, adressesLivraisonsXml]);
 
+    const gereLesChangeementsdItineraire = (newItineraires: Itineraire[]) => {
+        setItineraires(newItineraires);
+        // Appeler votre API ou mettre à jour la carte ici
+    };
+
 
     const definirAdressesSelonVoisins = (point: any) => {
         let adresse;
@@ -337,7 +342,7 @@ export default function Accueil() {
                 )}
                 <ItineraireManager
                     itineraires={itineraires}
-                    onItinerairesChange={handleItinerairesChange}
+                    onItinerairesChange={gereLesChangeementsdItineraire}
                 />
             </Box>
 
