@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import {MapContainer, TileLayer, Marker, Popup, Polygon, useMapEvents, Polyline} from 'react-leaflet';
 import L from 'leaflet';
 import * as turf from '@turf/turf';
-import { Button } from '@mui/material';
+import {Box, Button, CircularProgress} from '@mui/material';
 import { Point, Intersection } from '../Utils/points';
 import 'leaflet/dist/leaflet.css';
 
@@ -55,9 +55,10 @@ const marqueurEntrepot = new L.Icon({
 const polygonStyle = {
     fillColor: 'transparent',
     fillOpacity: 0,
-    weight: 3,
-    color: '#000',
-    opacity: 1
+    weight: 2,
+    dashArray: '5, 5',
+    color: '#9400D3',
+    opacity: 0.7
 };
 
 // Fonction pour générer une couleur aléatoire en hexadécimal
@@ -85,8 +86,8 @@ const Carte: React.FC<CarteProps> = ({
     const [convexHull, setConvexHull] = useState<any>(null);
     const [intersectionsFiltrees, setIntersectionsFiltrees] = useState<Intersection[]>([]);
     const [limitesCarte, setLimitesCarte] = useState<L.LatLngBounds | null>(null);
-    const refCarte = useRef<L.Map>(null); // Reference to the map
-
+    const [centreCarte, setCentreCarte] = useState<number[] | null>(null);
+    const refCarte = useRef<L.Map>(null);
     const minNiveauZoomForIntersections = 16;
 
     const ajouterBouton = (id: number, longitude: number, latitude: number, adresse: string) => {
@@ -94,7 +95,7 @@ const Carte: React.FC<CarteProps> = ({
         if (!adresseExiste) {
             if (!adresseEntrepot) {
                 setAdresseEntrepot({ id: id, longitude: longitude, latitude: latitude, adresse: adresse });
-            }else{
+            } else {
                 setAdresseLivraisonsAjoutees([...adressesLivraisonsAjoutees,
                     { id: id, longitude: longitude, latitude: latitude, adresse: adresse }]);
             }
@@ -140,28 +141,25 @@ const Carte: React.FC<CarteProps> = ({
 
             if (hull) {
                 const coordinates = hull.geometry.coordinates[0].map((coord) => [coord[1], coord[0]]);
+                const center = turf.center(turf.points(coordinates));
                 setConvexHull(coordinates);
+                setCentreCarte(center.geometry.coordinates);
             }
         }
 
     }, [intersections, adressesLivraisonsXml, adresseEntrepot, adressesLivraisonsAjoutees, limitesCarte]);
 
-    // Function to zoom and center the map on a specific point
     const gererZoomSurPoint = (latitude: number, longitude: number) => {
         if (refCarte.current) {
-            refCarte.current.setView([latitude, longitude], 16); // Zoom level 18
+            refCarte.current.setView([latitude, longitude], 16);
         }
     };
 
-    // Pass the function to the parent component
     useEffect(() => {
         zoomerVersPoint(gererZoomSurPoint);
     }, [zoomerVersPoint]);
 
-    // Fonction pour décaler un point géographique
     const offsetLatLng = (lat: number, lng: number, offsetLat: number, offsetLng: number) => {
-        // Conversion approximative de mètres en degrés
-        // À ajuster selon votre zone géographique
         const metersToDegreesLat = 0.000009;
         const metersToDegreesLng = 0.000009;
 
@@ -172,151 +170,141 @@ const Carte: React.FC<CarteProps> = ({
     };
 
     return (
-        <MapContainer center={[45.75, 4.85]} zoom={niveauZoom} style={{height: '400px', width: '100%'}} ref={refCarte}>
-            <MapEvents/>
-            <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            {/* Tracer les itinéraires entre l'entrepôt et les livraisons */}
-            {adresseEntrepot && itineraires.map((itineraire, index) => {
-                const color = genererCouleurAleatoire();
+        centreCarte ? (
+            <MapContainer center={centreCarte} zoom={niveauZoom} style={{ height: '400px', width: '100%' }} ref={refCarte}>
+                <MapEvents />
+                <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {adresseEntrepot && itineraires.map((itineraire, index) => {
+                    const color = genererCouleurAleatoire();
+                    const offset = index * 1;
+                    const offsetPositions = itineraire.cheminIntersections.map(intersection => {
+                        return offsetLatLng(
+                            intersection.latitude,
+                            intersection.longitude,
+                            offset,
+                            offset
+                        );
+                    });
 
-                // Calculer le décalage pour chaque trajet
-                // Le premier trajet n'est pas décalé, les suivants sont décalés progressivement
-                const offset = index * 1; // 20 mètres de décalage entre chaque trajet
+                    return (
+                        <React.Fragment key={index}>
+                            <Polyline
+                                positions={offsetPositions}
+                                color={'white'}
+                                weight={8}
+                                opacity={0.6}
+                            />
+                            <Polyline
+                                positions={offsetPositions}
+                                color={color}
+                                weight={4}
+                                opacity={1}
+                            >
+                                <Popup>Tournée {index + 1}</Popup>
+                            </Polyline>
+                            {itineraire.livraisons.livraisons
+                                .filter(livraison => livraison.estUneLivraison)
+                                .map((livraison, livraisonIndex) => {
+                                    const [offsetLat, offsetLng] = offsetLatLng(
+                                        livraison.intersection.latitude,
+                                        livraison.intersection.longitude,
+                                        offset,
+                                        offset
+                                    );
 
-                // Créer le trajet décalé
-                const offsetPositions = itineraire.cheminIntersections.map(intersection => {
-                    // Décaler le point perpendiculairement au trajet
-                    return offsetLatLng(
-                        intersection.latitude,
-                        intersection.longitude,
-                        offset,
-                        offset
+                                    return (
+                                        <Marker
+                                            key={`${index}-${livraisonIndex}`}
+                                            position={[offsetLat, offsetLng]}
+                                            icon={L.divIcon({
+                                                html: `
+                                                    <div style="
+                                                        background-color: ${color};
+                                                        color: white;
+                                                        border-radius: 50%;
+                                                        width: 24px;
+                                                        height: 24px;
+                                                        display: flex;
+                                                        align-items: center;
+                                                        justify-content: center;
+                                                        font-weight: bold;
+                                                        border: 2px solid white;
+                                                        font-size: 12px;
+                                                    ">
+                                                        ${livraisonIndex + 1}
+                                                    </div>
+                                                `,
+                                                className: 'custom-div-icon',
+                                                iconSize: [24, 24],
+                                                iconAnchor: [12, 12]
+                                            })}
+                                        >
+                                            <Popup>
+                                                <div>Point de livraison {livraisonIndex + 1}</div>
+                                                <div>ID: {livraison.intersection.id}</div>
+                                            </Popup>
+                                        </Marker>
+                                    );
+                                })}
+                        </React.Fragment>
                     );
-                });
-
-                return (
-                    <React.Fragment key={index}>
-                        {/* Contour blanc */}
-                        <Polyline
-                            positions={offsetPositions}
-                            color={'white'}
-                            weight={8}
-                            opacity={0.6}
-                        />
-
-                        {/* Ligne colorée principale */}
-                        <Polyline
-                            positions={offsetPositions}
-                            color={color}
-                            weight={4}
-                            opacity={1}
-                        >
-                            <Popup>Tournée {index + 1}</Popup>
-                        </Polyline>
-
-                        {/* Marqueurs pour les points de livraison */}
-                        {itineraire.livraisons.livraisons
-                            .filter(livraison => livraison.estUneLivraison)
-                            .map((livraison, livraisonIndex) => {
-                                const [offsetLat, offsetLng] = offsetLatLng(
-                                    livraison.intersection.latitude,
-                                    livraison.intersection.longitude,
-                                    offset,
-                                    offset
-                                );
-
-                                return (
-                                    <Marker
-                                        key={`${index}-${livraisonIndex}`}
-                                        position={[offsetLat, offsetLng]}
-                                        icon={L.divIcon({
-                                            html: `
-                                    <div style="
-                                        background-color: ${color};
-                                        color: white;
-                                        border-radius: 50%;
-                                        width: 24px;
-                                        height: 24px;
-                                        display: flex;
-                                        align-items: center;
-                                        justify-content: center;
-                                        font-weight: bold;
-                                        border: 2px solid white;
-                                        font-size: 12px;
-                                    ">
-                                        ${livraisonIndex + 1}
-                                    </div>
-                                `,
-                                            className: 'custom-div-icon',
-                                            iconSize: [24, 24],
-                                            iconAnchor: [12, 12]
-                                        })}
-                                    >
-                                        <Popup>
-                                            <div>Point de livraison {livraisonIndex + 1}</div>
-                                            <div>ID: {livraison.intersection.id}</div>
-                                        </Popup>
-                                    </Marker>
-                                );
-                            })}
-                    </React.Fragment>
-                );
-            })}
-            
-            {niveauZoom >= minNiveauZoomForIntersections && intersectionsFiltrees.map((intersection) => (
-                <Marker key={intersection.id} position={[intersection.latitude, intersection.longitude]}
-                        icon={marqueurIntersections}>
-                    <Popup>
-                        <span>{`Intersection ID: ${intersection.id}`}</span>
-                        <br/>
-                        <span><b>{`Adresse : ${intersection.adresse}`}</b><br/></span>
-                        <Button onClick={() =>
-                            ajouterBouton(intersection.id, intersection.longitude, intersection.latitude, intersection.adresse)}
-                        >
-                            {adresseEntrepot ? 'Ajouter une livraison' : 'Définir comme entrepôt'}
-                        </Button>
-                    </Popup>
-                </Marker>
-            ))}
-
-            {adresseEntrepot && (
-                <Marker key={adresseEntrepot.id} position={[adresseEntrepot.latitude, adresseEntrepot.longitude]}
-                        icon={marqueurEntrepot}>
-                    <Popup>
-                        <span>{`Entrepôt ID: ${adresseEntrepot.id}`}</span>
-                        <br/>
-                        <span><b>{`Adresse de l'entrepôt : ${adresseEntrepot.adresse}`}</b><br/></span>
-                    </Popup>
-                </Marker>
-            )}
-
-            {adressesLivraisonsXml && adressesLivraisonsXml.map((livraison) => (
-                <Marker key={livraison.id} position={[livraison.latitude, livraison.longitude]}
-                        icon={marqueurRequeteLivraison}>
-                    <Popup>
-                        <span>{`Livraison ID: ${livraison.id}`}</span>
-                        <br/>
-                        <span><b>{`Adresse de livraison : ${livraison.adresse}`}</b><br/></span>
-                    </Popup>
-                </Marker>
-            ))}
-
-            {adressesLivraisonsAjoutees && adressesLivraisonsAjoutees.map((livraison) => (
-                <Marker key={livraison.id} position={[livraison.latitude, livraison.longitude]}
-                        icon={marqueurLivraisonAjoutee}>
-                    <Popup>
-                        <span>{`Livraison ID: ${livraison.id}`}</span>
-                        <br/>
-                        <span><b>{`Adresse de livraison : ${livraison.adresse}`}</b><br/></span>
-                    </Popup>
-                </Marker>
-            ))}
-            {convexHull && (
-                <Polygon positions={convexHull} pathOptions={polygonStyle}/>
-            )}
-        </MapContainer>
+                })}
+                {niveauZoom >= minNiveauZoomForIntersections && intersectionsFiltrees.map((intersection) => (
+                    <Marker key={intersection.id} position={[intersection.latitude, intersection.longitude]}
+                            icon={marqueurIntersections}>
+                        <Popup>
+                            <span>{`Intersection ID: ${intersection.id}`}</span>
+                            <br />
+                            <span><b>{`Adresse : ${intersection.adresse}`}</b><br /></span>
+                            <Button onClick={() =>
+                                ajouterBouton(intersection.id, intersection.longitude, intersection.latitude, intersection.adresse)}
+                            >
+                                {adresseEntrepot ? 'Ajouter une livraison' : 'Définir comme entrepôt'}
+                            </Button>
+                        </Popup>
+                    </Marker>
+                ))}
+                {adresseEntrepot && (
+                    <Marker key={adresseEntrepot.id} position={[adresseEntrepot.latitude, adresseEntrepot.longitude]}
+                            icon={marqueurEntrepot}>
+                        <Popup>
+                            <span>{`Entrepôt ID: ${adresseEntrepot.id}`}</span>
+                            <br />
+                            <span><b>{`Adresse de l'entrepôt : ${adresseEntrepot.adresse}`}</b><br /></span>
+                        </Popup>
+                    </Marker>
+                )}
+                {adressesLivraisonsXml && adressesLivraisonsXml.map((livraison) => (
+                    <Marker key={livraison.id} position={[livraison.latitude, livraison.longitude]}
+                            icon={marqueurRequeteLivraison}>
+                        <Popup>
+                            <span>{`Livraison ID: ${livraison.id}`}</span>
+                            <br />
+                            <span><b>{`Adresse de livraison : ${livraison.adresse}`}</b><br /></span>
+                        </Popup>
+                    </Marker>
+                ))}
+                {adressesLivraisonsAjoutees && adressesLivraisonsAjoutees.map((livraison) => (
+                    <Marker key={livraison.id} position={[livraison.latitude, livraison.longitude]}
+                            icon={marqueurLivraisonAjoutee}>
+                        <Popup>
+                            <span>{`Livraison ID: ${livraison.id}`}</span>
+                            <br />
+                            <span><b>{`Adresse de livraison : ${livraison.adresse}`}</b><br /></span>
+                        </Popup>
+                    </Marker>
+                ))}
+                {convexHull && (
+                    <Polygon positions={convexHull} pathOptions={polygonStyle} />
+                )}
+            </MapContainer>
+        ) : (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+                <CircularProgress />
+            </Box>
+        )
     );
 };
 
