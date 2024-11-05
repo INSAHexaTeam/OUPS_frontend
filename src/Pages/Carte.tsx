@@ -13,7 +13,7 @@ interface CarteProps {
     setAdresseLivraisonsAjoutees: (adresses: Intersection[]) => void;
     adresseEntrepot: Intersection | null;
     setAdresseEntrepot : (adresse: Intersection) => void;
-    zoomToPoint: (latitude: number, longitude: number) => void; // New prop
+    zoomerVersPoint: (latitude: number, longitude: number) => void; // New prop
     itineraires: {
         cheminIntersections: Intersection[];
         livraisons: {
@@ -28,25 +28,25 @@ interface CarteProps {
     }[];
 }
 
-const customMarkerIntersections = new L.Icon({
+const marqueurIntersections = new L.Icon({
     iconUrl: require('../img/bouton-denregistrement.png'),
     iconSize: [15, 15],
     popupAnchor: [1, -15],
 });
 
-const customMarkerRequeteLivraison = new L.Icon({
+const marqueurRequeteLivraison = new L.Icon({
     iconUrl: require('../img/colis-color.png'),
     iconSize: [32, 32],
     popupAnchor: [1, -15],
 });
 
-const customMarkerLivraisonAjoutee = new L.Icon({
+const marqueurLivraisonAjoutee = new L.Icon({
     iconUrl: require('../img/colis-color-2.png'),
     iconSize: [32, 32],
     popupAnchor: [1, -15],
 });
 
-const customMarkerEntrepot = new L.Icon({
+const marqueurEntrepot = new L.Icon({
     iconUrl: require('../img/entrepot.png'),
     iconSize: [35, 35],
     popupAnchor: [1, -15],
@@ -61,7 +61,7 @@ const polygonStyle = {
 };
 
 // Fonction pour générer une couleur aléatoire en hexadécimal
-const generateRandomColor = () => {
+const genererCouleurAleatoire = () => {
     const letters = '0123456789ABCDEF';
     let color = '#';
     for (let i = 0; i < 6; i++) {
@@ -78,16 +78,16 @@ const Carte: React.FC<CarteProps> = ({
                                          setAdresseLivraisonsAjoutees,
                                          adresseEntrepot,
                                          setAdresseEntrepot,
-                                         zoomToPoint,
+                                         zoomerVersPoint,
                                          itineraires
                                      }) => {
-    const [zoomLevel, setZoomLevel] = useState<number>(13);
+    const [niveauZoom, setNiveauZoom] = useState<number>(13);
     const [convexHull, setConvexHull] = useState<any>(null);
     const [intersectionsFiltrees, setIntersectionsFiltrees] = useState<Intersection[]>([]);
-    const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
-    const mapRef = useRef<L.Map>(null); // Reference to the map
+    const [limitesCarte, setLimitesCarte] = useState<L.LatLngBounds | null>(null);
+    const refCarte = useRef<L.Map>(null); // Reference to the map
 
-    const minZoomLevelForIntersections = 16;
+    const minNiveauZoomForIntersections = 16;
 
     const ajouterBouton = (id: number, longitude: number, latitude: number, adresse: string) => {
         const adresseExiste = adressesLivraisonsAjoutees.some((livraison) => livraison.id === id);
@@ -104,11 +104,11 @@ const Carte: React.FC<CarteProps> = ({
     const MapEvents = () => {
         useMapEvents({
             zoomend: (e) => {
-                setZoomLevel(e.target.getZoom());
-                setMapBounds(e.target.getBounds());
+                setNiveauZoom(e.target.getZoom());
+                setLimitesCarte(e.target.getBounds());
             },
             moveend: (e) => {
-                setMapBounds(e.target.getBounds());
+                setLimitesCarte(e.target.getBounds());
             }
         });
         return null;
@@ -119,7 +119,7 @@ const Carte: React.FC<CarteProps> = ({
             const isInAdressesLivraisonsXMLs = adressesLivraisonsXml.some(livraison => livraison.id === intersection.id);
             const isEntrepot = adresseEntrepot && adresseEntrepot.id === intersection.id;
             const isAdresseLivraisonsAjoutees = adressesLivraisonsAjoutees.some(livraison => livraison.id === intersection.id);
-            const isInBounds = mapBounds ? mapBounds.contains([intersection.latitude, intersection.longitude]) : true;
+            const isInBounds = limitesCarte ? limitesCarte.contains([intersection.latitude, intersection.longitude]) : true;
             return !isInAdressesLivraisonsXMLs && !isEntrepot && !isAdresseLivraisonsAjoutees && isInBounds;
         });
         setIntersectionsFiltrees(filteredIntersections);
@@ -144,19 +144,19 @@ const Carte: React.FC<CarteProps> = ({
             }
         }
 
-    }, [intersections, adressesLivraisonsXml, adresseEntrepot, adressesLivraisonsAjoutees, mapBounds]);
+    }, [intersections, adressesLivraisonsXml, adresseEntrepot, adressesLivraisonsAjoutees, limitesCarte]);
 
     // Function to zoom and center the map on a specific point
-    const handleZoomToPoint = (latitude: number, longitude: number) => {
-        if (mapRef.current) {
-            mapRef.current.setView([latitude, longitude], 16); // Zoom level 18
+    const gererZoomSurPoint = (latitude: number, longitude: number) => {
+        if (refCarte.current) {
+            refCarte.current.setView([latitude, longitude], 16); // Zoom level 18
         }
     };
 
     // Pass the function to the parent component
     useEffect(() => {
-        zoomToPoint(handleZoomToPoint);
-    }, [zoomToPoint]);
+        zoomerVersPoint(gererZoomSurPoint);
+    }, [zoomerVersPoint]);
 
     // Fonction pour décaler un point géographique
     const offsetLatLng = (lat: number, lng: number, offsetLat: number, offsetLng: number) => {
@@ -172,14 +172,14 @@ const Carte: React.FC<CarteProps> = ({
     };
 
     return (
-        <MapContainer center={[45.75, 4.85]} zoom={zoomLevel} style={{height: '400px', width: '100%'}} ref={mapRef}>
+        <MapContainer center={[45.75, 4.85]} zoom={niveauZoom} style={{height: '400px', width: '100%'}} ref={refCarte}>
             <MapEvents/>
             <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             {/* Tracer les itinéraires entre l'entrepôt et les livraisons */}
             {adresseEntrepot && itineraires.map((itineraire, index) => {
-                const color = generateRandomColor();
+                const color = genererCouleurAleatoire();
 
                 // Calculer le décalage pour chaque trajet
                 // Le premier trajet n'est pas décalé, les suivants sont décalés progressivement
@@ -265,9 +265,9 @@ const Carte: React.FC<CarteProps> = ({
                 );
             })}
             
-            {zoomLevel >= minZoomLevelForIntersections && intersectionsFiltrees.map((intersection) => (
+            {niveauZoom >= minNiveauZoomForIntersections && intersectionsFiltrees.map((intersection) => (
                 <Marker key={intersection.id} position={[intersection.latitude, intersection.longitude]}
-                        icon={customMarkerIntersections}>
+                        icon={marqueurIntersections}>
                     <Popup>
                         <span>{`Intersection ID: ${intersection.id}`}</span>
                         <br/>
@@ -283,7 +283,7 @@ const Carte: React.FC<CarteProps> = ({
 
             {adresseEntrepot && (
                 <Marker key={adresseEntrepot.id} position={[adresseEntrepot.latitude, adresseEntrepot.longitude]}
-                        icon={customMarkerEntrepot}>
+                        icon={marqueurEntrepot}>
                     <Popup>
                         <span>{`Entrepôt ID: ${adresseEntrepot.id}`}</span>
                         <br/>
@@ -294,7 +294,7 @@ const Carte: React.FC<CarteProps> = ({
 
             {adressesLivraisonsXml && adressesLivraisonsXml.map((livraison) => (
                 <Marker key={livraison.id} position={[livraison.latitude, livraison.longitude]}
-                        icon={customMarkerRequeteLivraison}>
+                        icon={marqueurRequeteLivraison}>
                     <Popup>
                         <span>{`Livraison ID: ${livraison.id}`}</span>
                         <br/>
@@ -305,7 +305,7 @@ const Carte: React.FC<CarteProps> = ({
 
             {adressesLivraisonsAjoutees && adressesLivraisonsAjoutees.map((livraison) => (
                 <Marker key={livraison.id} position={[livraison.latitude, livraison.longitude]}
-                        icon={customMarkerLivraisonAjoutee}>
+                        icon={marqueurLivraisonAjoutee}>
                     <Popup>
                         <span>{`Livraison ID: ${livraison.id}`}</span>
                         <br/>

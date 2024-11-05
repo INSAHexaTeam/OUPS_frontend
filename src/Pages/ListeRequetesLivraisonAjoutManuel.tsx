@@ -11,7 +11,7 @@ interface ListeRequetesLivraisonAjoutManuelProps {
     setAdresseLivraisonsAjoutees: (adressesLivraisons: Intersection[]) => void;
     pointDeRetrait: Intersection; // correspond à l'entrepôt
     setPointDeRetrait: (pointDeRetrait: Intersection) => void;
-    zoomToPoint: (latitude: number, longitude: number) => void;
+    zoomerVersPoint: (latitude: number, longitude: number) => void;
 }
 
 export default function ListeRequetesLivraisonAjoutManuel({
@@ -20,19 +20,19 @@ export default function ListeRequetesLivraisonAjoutManuel({
                                                               setAdresseLivraisonsAjoutees,
                                                               pointDeRetrait,
                                                               setPointDeRetrait,
-                                                              zoomToPoint
+                                                              zoomerVersPoint
                                                           }: ListeRequetesLivraisonAjoutManuelProps) {
 
     // Fonction pour supprimer une livraison
     //todo ; ajouter la suppression des intersections importées
-    const handleSupprimerLivraison = (id: number) => () => {
+    const gererSuppressionLivraison = (id: number) => () => {
         const newAdressesLivraisons = adressesLivraisonsAjoutees.filter((livraison) => livraison.id !== id);
         setAdresseLivraisonsAjoutees(newAdressesLivraisons);
     };
 
-    const handleRowClick = (params) => {
+    const gererClicLigne = (params) => {
         const { latitude, longitude } = params.row;
-        zoomToPoint(latitude, longitude);
+        zoomerVersPoint(latitude, longitude);
     };
 
     // L'entrepôt est affiché en premier dans la liste puis les adresses de livraison xml
@@ -75,7 +75,7 @@ export default function ListeRequetesLivraisonAjoutManuel({
                 return [
                     <GridActionsCellItem
                         icon={<DeleteRoundedIcon />}
-                        onClick={handleSupprimerLivraison(id)}
+                        onClick={gererSuppressionLivraison(id)}
                         color="error"
                     />,
                 ];
@@ -90,7 +90,7 @@ export default function ListeRequetesLivraisonAjoutManuel({
                 columns={columns}
                 hideFooterPagination
                 disableSelectionOnClick
-                onRowClick={handleRowClick}
+                onRowClick={gererClicLigne}
                 getRowClassName={(params) => params.indexRelativeToCurrentPage === 0 ? 'first-row' : ''}
                 sx={{
                     '& .MuiDataGrid-root': {

@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
 import '../Styles/Accueil.css';
 import Carte from './Carte.tsx';
-import { Intersection, Point } from '../Utils/points';
+import { Intersection, Point } from '../Utils/points.tsx';
 import { Box, Button, CircularProgress, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
 import toast, { Toaster } from "react-hot-toast";
 import ListeRequetesLivraisonAjoutManuel from "./ListeRequetesLivraisonAjoutManuel.tsx";
 import MailIcon from '@mui/icons-material/Mail';
 import MapIcon from '@mui/icons-material/Map';
-import {Livraisons } from '../Utils/points';
+import {Livraisons } from '../Utils/points.tsx';
 import { enregistrerCarte } from "../Appels_api/enregistrerCarte.ts";
 import { enregistrerRequetesLivraisons } from "../Appels_api/enregistrerRequetesLivraisons.ts";
 import '../Styles/Accueil.css';
@@ -28,7 +28,7 @@ const VisuallyHiddenInput = styled('input')({
 
 export default function Accueil() {
     const [message, setMessage] = useState<string | null>(null);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [erreurMessage, setErreurMessage] = useState<string | null>(null);
     const [points, setPoints] = useState<Point[]>([]);
     const [intersections, setIntersections] = useState<Intersection[]>([]);
     const [adressesLivraisonsAjoutees, setAdresseLivraisonsAjoutees] = useState<Intersection[]>([]);
@@ -46,7 +46,7 @@ export default function Accueil() {
         setListesTotalAdressesLivraisons([...adressesLivraisonsAjoutees, ...adressesLivraisonsXml]);
     }, [adressesLivraisonsAjoutees, adressesLivraisonsXml]);
 
-    const loadPoints = (donnees: Blob) => {
+    const chargerPoints = (donnees: Blob) => {
         try {
             setIsTourneeCalculee(false);
             const nouvellesIntersections: Intersection[] = donnees.intersections.map((point: any) => ({
@@ -69,11 +69,11 @@ export default function Accueil() {
             );
             setPoints(nouveauPoints);
         } catch (error) {
-            setErrorMessage('Erreur lors du chargement des points depuis le fichier JSON');
+            setErreurMessage('Erreur lors du chargement des points depuis le fichier JSON');
         }
     };
 
-    const handleFileRead = (file: File, isCarte: boolean = false) => {
+    const gererLectureFichier = (file: File, isCarte: boolean = false) => {
         setIsTourneeCalculee(false);
         if (file && file.type === 'text/xml') {
             const reader = new FileReader();
@@ -85,7 +85,7 @@ export default function Accueil() {
                         enregistrerCarte("CHARGEMENT", file)
                             .then((response) => {
                                 const { message, data } = response;
-                                loadPoints(data);
+                                chargerPoints(data);
                                 toast.success(message);
                                 setLoading(false);
                             }).catch((error) => {
@@ -124,20 +124,20 @@ export default function Accueil() {
                         });
                     }
                     setMessage(null);
-                    setErrorMessage(null);
+                    setErreurMessage(null);
                 }
             };
             reader.onerror = () => {
-                setErrorMessage('Erreur de lecture du fichier');
+                setErreurMessage('Erreur de lecture du fichier');
                 setLoading(false);
             };
             reader.readAsText(file);
         } else {
-            setErrorMessage('Veuillez télécharger un fichier XML valide');
+            setErreurMessage('Veuillez télécharger un fichier XML valide');
         }
     };
 
-    const handleFileSelect = (event: ChangeEvent<HTMLInputElement>, isCarte: boolean = false) => {
+    const gererSelectionFichier = (event: ChangeEvent<HTMLInputElement>, isCarte: boolean = false) => {
         
         // On supprime les anciennes livraisons si on charge une nouvelle carte
         if(isCarte){
@@ -148,7 +148,7 @@ export default function Accueil() {
         setPointDeRetrait(null);
         const file = event.target.files?.[0];
         if (file) {
-            handleFileRead(file, isCarte);
+            gererLectureFichier(file, isCarte);
         }
     };
 
@@ -209,7 +209,7 @@ export default function Accueil() {
                         <VisuallyHiddenInput
                             type="file"
                             accept=".xml"
-                            onChange={(event) => handleFileSelect(event, true)}
+                            onChange={(event) => gererSelectionFichier(event, true)}
                             multiple
                         />
                     </Button>
@@ -226,7 +226,7 @@ export default function Accueil() {
                             <VisuallyHiddenInput
                                 type="file"
                                 accept=".xml"
-                                onChange={(event) => handleFileSelect(event, false)}
+                                onChange={(event) => gererSelectionFichier(event, false)}
                                 multiple
                             />
                         </Button>
@@ -234,7 +234,7 @@ export default function Accueil() {
                 </Box>
 
                 {message && <p className="success-message">{message}</p>}
-                {errorMessage && <p className="error-message">{errorMessage}</p>}
+                {erreurMessage && <p className="error-message">{erreurMessage}</p>}
 
                 {loading ? (
                         <Box sx={{display: 'flex', flexDirection: 'row', gap: '2dvw'}}>
@@ -252,7 +252,7 @@ export default function Accueil() {
                                 adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
                                 adressesLivraisonsXml={adressesLivraisonsXml}
                                 adresseEntrepot={pointDeRetrait}
-                                zoomToPoint={(fn) => { zoomToPointRef.current = fn; }}
+                                zoomerVersPoint={(fn) => { zoomToPointRef.current = fn; }}
                                 itineraires={itineraires}
                             />
                         </Box>
@@ -264,7 +264,7 @@ export default function Accueil() {
                                 setAdresseLivraisonsAjoutees={setAdresseLivraisonsAjoutees}
                                 pointDeRetrait={pointDeRetrait}
                                 setPointDeRetrait={setPointDeRetrait}
-                                zoomToPoint={zoomToPointRef.current}
+                                zoomerVersPoint={zoomToPointRef.current}
                             />
                         </Box>
                     </Box>

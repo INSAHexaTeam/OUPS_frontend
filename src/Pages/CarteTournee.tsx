@@ -7,23 +7,23 @@ import 'leaflet/dist/leaflet.css';
 interface CarteTourneeProps {
     adressesLivraisons: Intersection[];
     adresseEntrepot: Intersection | null;
-    zoomToPoint: (latitude: number, longitude: number) => void;
+    zoomerVersPoint: (latitude: number, longitude: number) => void;
     itineraires: Itineraire[];
 }
 
-const customMarkerRequeteLivraison = new L.Icon({
+const marqueurRequeteLivraison = new L.Icon({
     iconUrl: require('../img/colis-color.png'),
     iconSize: [32, 32],
     popupAnchor: [1, -15],
 });
-const customMarkerEntrepot = new L.Icon({
+const marqueurEntrepot = new L.Icon({
     iconUrl: require('../img/entrepot.png'),
     iconSize: [35, 35],
     popupAnchor: [1, -15],
 });
 
 // Fonction pour générer une couleur aléatoire en hexadécimal
-const generateRandomColor = () => {
+const genererCouleurAleatoire = () => {
     const letters = '0123456789ABCDEF';
     let color = '#';
     for (let i = 0; i < 6; i++) {
@@ -35,13 +35,13 @@ const generateRandomColor = () => {
 const Carte: React.FC<CarteTourneeProps> = ({
                                                 adressesLivraisons,
                                                 adresseEntrepot,
-                                                zoomToPoint,
+                                                zoomerVersPoint,
                                                 itineraires
                                             }) => {
-    const mapRef = useRef<L.Map>(null);
+    const refCarte = useRef<L.Map>(null);
 
     return (
-        <MapContainer center={[45.75, 4.85]} zoom={13} style={{ height: '400px', width: '100%' }} ref={mapRef}>
+        <MapContainer center={[45.75, 4.85]} zoom={13} style={{ height: '400px', width: '100%' }} ref={refCarte}>
             <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
@@ -49,7 +49,7 @@ const Carte: React.FC<CarteTourneeProps> = ({
             {/* Tracer les itinéraires entre l'entrepôt et les livraisons */}
             {adresseEntrepot && itineraires.map((itineraire, index) => {
                 // Générer une couleur aléatoire pour chaque tournée
-                const color = itineraire.couleur || generateRandomColor();
+                const color = itineraire.couleur || genererCouleurAleatoire();
                 return (
                     <Polyline
                         key={index}
@@ -65,7 +65,7 @@ const Carte: React.FC<CarteTourneeProps> = ({
 
             {/* Marqueurs des adresses de livraison */}
             {adressesLivraisons.map((livraison) => (
-                <Marker key={livraison.id} position={[livraison.latitude, livraison.longitude]} icon={customMarkerRequeteLivraison}>
+                <Marker key={livraison.id} position={[livraison.latitude, livraison.longitude]} icon={marqueurRequeteLivraison}>
                     <Popup>
                         <span>{`Livraison ID: ${livraison.id}`}</span>
                         <br />
@@ -76,7 +76,7 @@ const Carte: React.FC<CarteTourneeProps> = ({
 
             {/* Marqueur de l'entrepôt */}
             {adresseEntrepot && (
-                <Marker key={adresseEntrepot.id} position={[adresseEntrepot.latitude, adresseEntrepot.longitude]} icon={customMarkerEntrepot}>
+                <Marker key={adresseEntrepot.id} position={[adresseEntrepot.latitude, adresseEntrepot.longitude]} icon={marqueurEntrepot}>
                     <Popup>
                         <span>{`Entrepôt ID: ${adresseEntrepot.id}`}</span>
                         <br />
