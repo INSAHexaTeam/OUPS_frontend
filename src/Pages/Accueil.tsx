@@ -213,7 +213,12 @@ export default function Accueil() {
             setChargemementCalculTournee(true);
             const result = await calculerItineraire(livraisons);
 
-            setItineraires(result.data.livraisons);
+            const itinerairesFomrmated = result.data.livraisons.map((itineraire, coursierIndex) => {
+                itineraire.livraisons.coursier = coursierIndex;
+                console.log("itineraire", itineraire);
+                return itineraire;
+            });
+            setItineraires(itinerairesFomrmated);
             setIsTourneeCalculee(true);
             setChargemementCalculTournee(false);
             toast.success("Tournée calculée avec succès");
@@ -345,8 +350,6 @@ export default function Accueil() {
                     onItinerairesChange={gereLesChangeementsdItineraire}
                 />
             </Box>
-
-           
         </Box>
     );
 }

@@ -1,5 +1,5 @@
 // ItineraireManager.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Card,
     CardContent,
@@ -24,10 +24,10 @@ import {
 } from '@mui/material';
 import {
     DragHandle as DragHandleIcon,
-    EditLocation as EditLocationIcon,
+    Delete as DeleteIcon,
     ExpandMore as ExpandMoreIcon
 } from '@mui/icons-material';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable, DroppableProvided, DraggableProvided } from 'react-beautiful-dnd';
 
 interface Livraison {
     intersection: {
@@ -50,9 +50,15 @@ interface Itineraire {
             };
         };
         livraisons: Livraison[];
+        coursier?: number;
     };
     cheminIntersections: any[];
 }
+
+// Ajouter cette fonction avant le composant ItineraireManager
+const deepCopy = <T,>(obj: T): T => {
+    return JSON.parse(JSON.stringify(obj));
+};
 
 interface ItineraireManagerProps {
     itineraires: Itineraire[];
@@ -63,6 +69,28 @@ const ItineraireManager: React.FC<ItineraireManagerProps> = ({ itineraires, onIt
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedLivraison, setSelectedLivraison] = useState<any>(null);
     const [selectedCoursier, setSelectedCoursier] = useState<number>(0);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [livraisonToDelete, setLivraisonToDelete] = useState<{ livraison: Livraison, coursierIndex: number } | null>(null);
+    const [history, setHistory] = useState<Itineraire[][]>([itineraires]);
+    const [isModified, setIsModified] = useState(false);
+
+
+    //l'objet itinéraire est une liste de livraisons par coursier : itinéraire = [livraisonPourCoursier1, livraisonPourCoursier2, ...]
+    //les livraisonsPourCoursier sont des objets avec les propriétés : cheminIntersections, livraisons
+    //cheminIntersections est un tableau d'intersection qui correspond au chemin du coursier
+    //livraisons est un objet qui contient le numéro du coursier (pas forcément utile car on peut le retrouver avec l'index de l'itinéraire) 
+    //l'entrepot et l'heure de départ puis la listes des livraisons (= les intersections sur lesquelles le coursier doit s'arreter)
+    //livraisons est un tableau de livraison
+
+    //la structure n'est clairement pas optimale mais elle était en lien avec ce qu'il se passait dans le backend
+    //vu que thomas vas changer le backend, il risque de falloir modifier ce code
+
+    useEffect(() => {
+        const deepCopyItineraires = deepCopy(itineraires);
+        console.log("history retard 1", history);
+        console.log("history a jour", [...history, deepCopyItineraires]);
+        setHistory([...history, deepCopyItineraires]);
+    }, [itineraires]);
 
     const handleDragEnd = (result: any) => {
         if (!result.destination) return;
@@ -92,7 +120,7 @@ const ItineraireManager: React.FC<ItineraireManagerProps> = ({ itineraires, onIt
             newItineraires[destItineraireIndex].livraisons.livraisons = destLivraisons;
         }
 
-        onItinerairesChange(newItineraires);
+        updateItineraires(newItineraires);
     };
 
     const handleEditLivraison = (livraison: Livraison, coursierIndex: number) => {
@@ -120,11 +148,59 @@ const ItineraireManager: React.FC<ItineraireManagerProps> = ({ itineraires, onIt
         setIsDialogOpen(false);
     };
 
+    const handleDeleteLivraison = () => {
+        if (!livraisonToDelete) return;
+
+        const newItineraires = [...itineraires];
+        const { livraison, coursierIndex } = livraisonToDelete;
+
+        // Retirer la livraison de son itinéraire actuel
+        const itineraire = newItineraires[coursierIndex];
+        itineraire.livraisons.livraisons = itineraire.livraisons.livraisons.filter(
+            l => l.intersection.id !== livraison.intersection.id
+        );
+
+        updateItineraires(newItineraires);
+        setIsDeleteDialogOpen(false);
+    };
+
+    const handleUndo = () => {
+        if (history.length > 1) {
+            console.log("history", history);
+            const newHistory = [...history];
+            newHistory.pop();
+            const previousState = newHistory[newHistory.length - 1];
+            setHistory(newHistory);
+            onItinerairesChange(deepCopy(previousState));
+            setIsModified(true);
+        }
+    };
+
+    const updateItineraires = (newItineraires: Itineraire[]) => {
+
+        // setHistory([...history, newItineraires]);
+        onItinerairesChange(newItineraires);
+        setIsModified(true);
+    };
+
+    const handleApiCall = () => {
+        console.log("Appel API effectué avec les itinéraires mis à jour");
+        setIsModified(false);
+    };
+
     return (
         <Box sx={{ margin: 'auto', padding: 2 }}>
-    <Typography variant="h4" gutterBottom>
-    Gestion des Itinéraires
-    </Typography>
+            <Typography variant="h4" gutterBottom>
+                Gestion des Itinéraires
+            </Typography>
+
+            <Button onClick={handleUndo} disabled={history.length <= 1} variant="outlined" sx={{ mb: 2 }}>
+                Annuler la dernière action
+            </Button>
+
+            <Button onClick={handleApiCall} disabled={!isModified} variant="contained" sx={{ mb: 2, ml: 2 }}>
+                Envoyer les modifications
+            </Button>
 
             <DragDropContext onDragEnd={handleDragEnd}>
                 <Box sx={{
@@ -208,9 +284,12 @@ const ItineraireManager: React.FC<ItineraireManagerProps> = ({ itineraires, onIt
                                                                 </Box>
                                                                 <IconButton
                                                                     size="small"
-                                                                    onClick={() => handleEditLivraison(livraison, index)}
+                                                                    onClick={() => {
+                                                                        setLivraisonToDelete({ livraison, coursierIndex: index });
+                                                                        setIsDeleteDialogOpen(true);
+                                                                    }}
                                                                 >
-                                                                    <EditLocationIcon />
+                                                                    <DeleteIcon />
                                                                 </IconButton>
                                                             </Box>
                                                         </ListItem>
@@ -227,32 +306,45 @@ const ItineraireManager: React.FC<ItineraireManagerProps> = ({ itineraires, onIt
                 </Box>
             </DragDropContext>
 
-    <Dialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)}>
-    <DialogTitle>Modifier la livraison</DialogTitle>
-    <DialogContent>
-    <FormControl fullWidth sx={{ mt: 2 }}>
-    <InputLabel>Coursier</InputLabel>
-    <Select
-    value={selectedCoursier}
-    onChange={(e) => setSelectedCoursier(e.target.value as number)}
->
-    {itineraires.map((_, index) => (
-        <MenuItem key={index} value={index}>
-        Coursier {index + 1}
-        </MenuItem>
-    ))}
-    </Select>
-    </FormControl>
-    </DialogContent>
-    <DialogActions>
-    <Button onClick={() => setIsDialogOpen(false)}>Annuler</Button>
-    <Button onClick={handleSaveEdit} variant="contained">
-        Sauvegarder
-        </Button>
-        </DialogActions>
-        </Dialog>
+            <Dialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)}>
+                <DialogTitle>Modifier la livraison</DialogTitle>
+                <DialogContent>
+                    <FormControl fullWidth sx={{ mt: 2 }}>
+                        <InputLabel>Coursier</InputLabel>
+                        <Select
+                            value={selectedCoursier}
+                            onChange={(e) => setSelectedCoursier(e.target.value as number)}
+                        >
+                            {itineraires.map((_, index) => (
+                                <MenuItem key={index} value={index}>
+                                    Coursier {index + 1}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setIsDialogOpen(false)}>Annuler</Button>
+                    <Button onClick={handleSaveEdit} variant="contained">
+                        Sauvegarder
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={isDeleteDialogOpen} onClose={() => setIsDeleteDialogOpen(false)}>
+                <DialogTitle>Confirmer la suppression</DialogTitle>
+                <DialogContent>
+                    <Typography>Êtes-vous sûr de vouloir supprimer cette livraison ?</Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setIsDeleteDialogOpen(false)}>Annuler</Button>
+                    <Button onClick={handleDeleteLivraison} variant="contained" color="error">
+                        Supprimer
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
-);
+    );
 };
 
 export default ItineraireManager;
