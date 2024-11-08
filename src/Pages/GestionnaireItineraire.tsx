@@ -25,7 +25,9 @@ import {
 import {
     DragHandle as DragHandleIcon,
     Delete as DeleteIcon,
-    ExpandMore as ExpandMoreIcon
+    ExpandMore as ExpandMoreIcon,
+    Undo as UndoIcon,
+    Redo as RedoIcon
 } from '@mui/icons-material';
 import { DragDropContext, Droppable, Draggable, DroppableProvided, DraggableProvided } from 'react-beautiful-dnd';
 
@@ -74,6 +76,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({ itinera
     const [historique, setHistorique] = useState<Itineraire[][]>([itineraires]);
     const [estModifie, setEstModifie] = useState(false);
     const [retourEnCours, setRetourEnCours] = useState(false);
+    const [historiqueAnnule, setHistoriqueAnnule] = useState<Itineraire[][]>([]);
 
 
     //l'objet itinéraire est une liste de livraisons par coursier : itinéraire = [livraisonPourCoursier1, livraisonPourCoursier2, ...]
@@ -173,9 +176,9 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({ itinera
     const annulerDerniereAction = () => {
         setRetourEnCours(true);
         if (historique.length > 1) {
-            console.log("history", historique);
             const newHistory = [...historique];
-            newHistory.pop();
+            const actionAnnulee = newHistory.pop()!; // L'action qu'on annule
+            setHistoriqueAnnule([...historiqueAnnule, actionAnnulee]); // On la sauvegarde
             const previousState = newHistory[newHistory.length - 1];
             setHistorique(newHistory);
             onChangementItineraires(deepCopy(previousState));
@@ -183,9 +186,22 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({ itinera
         }
     };
 
+    const retablirDerniereAction = () => {
+        setRetourEnCours(true);
+        if (historiqueAnnule.length > 0) {
+            const newHistoriqueAnnule = [...historiqueAnnule];
+            const actionARetablir = newHistoriqueAnnule.pop()!;
+            setHistoriqueAnnule(newHistoriqueAnnule);
+            setHistorique([...historique, actionARetablir]);
+            onChangementItineraires(deepCopy(actionARetablir));
+            setEstModifie(true);
+        }
+    };
+
     const mettreAJourItineraires = (nouveauxItineraires: Itineraire[]) => {
         onChangementItineraires(nouveauxItineraires);
         setEstModifie(true);
+        setHistoriqueAnnule([]);
     };
 
     const appelerAPI = () => {
@@ -199,13 +215,31 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({ itinera
                 Gestion des Itinéraires
             </Typography>
 
-            <Button onClick={annulerDerniereAction} disabled={historique.length <= 1} variant="outlined" sx={{ mb: 2 }}>
-                Annuler la dernière action
-            </Button>
+            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                <Button 
+                    onClick={annulerDerniereAction} 
+                    disabled={historique.length <= 1} 
+                    variant="outlined"
+                    startIcon={<UndoIcon />}
+                    title="Annuler la dernière action"
+                />
 
-            <Button onClick={appelerAPI} disabled={!estModifie} variant="contained" sx={{ mb: 2, ml: 2 }}>
-                Envoyer les modifications
-            </Button>
+                <Button 
+                    onClick={retablirDerniereAction} 
+                    disabled={historiqueAnnule.length === 0} 
+                    variant="outlined"
+                    startIcon={<RedoIcon />}
+                    title="Rétablir la dernière action"
+                />
+
+                <Button 
+                    onClick={appelerAPI} 
+                    disabled={!estModifie} 
+                    variant="contained"
+                >
+                    Envoyer les modifications
+                </Button>
+            </Box>
 
             <DragDropContext onDragEnd={gererFinGlisserDeposer}>
                 <Box sx={{
