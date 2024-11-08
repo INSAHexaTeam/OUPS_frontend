@@ -63,16 +63,21 @@ const deepCopy = <T,>(obj: T): T => {
 };
 
 interface GestionnaireItineraireProps {
-    itineraires: Itineraire[];
-    onChangementItineraires: (nouveauxItineraires: Itineraire[]) => void;
+    itineraires: any[];
+    onChangementItineraires: (nouveauxItineraires: any[]) => void;
+    itineraireSelectionne?: number;
+    onSelectionItineraire: (index: number | undefined) => void;
 }
 
-const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({ itineraires, onChangementItineraires }) => {
+const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({ 
+    itineraires, 
+    onChangementItineraires,
+    itineraireSelectionne,
+    onSelectionItineraire
+}) => {
     const [dialogueOuvert, setDialogueOuvert] = useState(false);
     const [livraisonSelectionnee, setLivraisonSelectionnee] = useState<any>(null);
     const [coursierSelectionne, setCoursierSelectionne] = useState<number>(0);
-    const [dialogueSuppressionOuvert, setDialogueSuppressionOuvert] = useState(false);
-    const [livraisonASupprimer, setLivraisonASupprimer] = useState<{ livraison: PointLivraison, indexCoursier: number } | null>(null);
     const [historique, setHistorique] = useState<Itineraire[][]>([itineraires]);
     const [estModifie, setEstModifie] = useState(false);
     const [retourEnCours, setRetourEnCours] = useState(false);
@@ -157,11 +162,8 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({ itinera
         setDialogueOuvert(false);
     };
 
-    const supprimerLivraison = () => {
-        if (!livraisonASupprimer) return;
-
+    const supprimerLivraison = (livraison: PointLivraison, indexCoursier: number) => {
         const nouveauxItineraires = [...itineraires];
-        const { livraison, indexCoursier } = livraisonASupprimer;
 
         // Retirer la livraison de son itinéraire actuel
         const itineraire = nouveauxItineraires[indexCoursier];
@@ -170,7 +172,6 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({ itinera
         );
 
         mettreAJourItineraires(nouveauxItineraires);
-        setDialogueSuppressionOuvert(false);
     };
 
     const annulerDerniereAction = () => {
@@ -209,8 +210,23 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({ itinera
         setEstModifie(false);
     };
 
+    const gererSelectionItineraire = (index: number) => {
+        if (itineraireSelectionne === index) {
+            onSelectionItineraire(undefined);
+        } else {
+            onSelectionItineraire(index);
+        }
+    };
+
     return (
-        <Box sx={{ margin: 'auto', padding: 2 }}>
+        <Box 
+            sx={{ margin: 'auto', padding: 2 }}
+            onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                    onSelectionItineraire(undefined);
+                }
+            }}
+        >
             <Typography variant="h4" gutterBottom>
                 Gestion des Itinéraires
             </Typography>
@@ -254,7 +270,16 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({ itinera
                             maxWidth: 350,
                             backgroundColor: 'background.default'
                         }}>
-                            <CardContent>
+                            <CardContent 
+                                onClick={() => gererSelectionItineraire(index)}
+                                sx={{
+                                    cursor: 'pointer',
+                                    backgroundColor: itineraireSelectionne === index ? 'action.selected' : 'background.default',
+                                    '&:hover': {
+                                        backgroundColor: 'action.hover'
+                                    }
+                                }}
+                            >
                                 <Typography color="primary" variant="h6" gutterBottom>
                                     Coursier {index + 1}
                                 </Typography>
@@ -323,10 +348,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({ itinera
                                                                 </Box>
                                                                 <IconButton
                                                                     size="small"
-                                                                    onClick={() => {
-                                                                        setLivraisonASupprimer({ livraison: livraison, indexCoursier: index });
-                                                                        setDialogueSuppressionOuvert(true);
-                                                                    }}
+                                                                    onClick={() => supprimerLivraison(livraison, index)}
                                                                 >
                                                                     <DeleteIcon />
                                                                 </IconButton>
@@ -366,19 +388,6 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({ itinera
                     <Button onClick={() => setDialogueOuvert(false)}>Annuler</Button>
                     <Button onClick={sauvegarderModification} variant="contained">
                         Sauvegarder
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            <Dialog open={dialogueSuppressionOuvert} onClose={() => setDialogueSuppressionOuvert(false)}>
-                <DialogTitle>Confirmer la suppression</DialogTitle>
-                <DialogContent>
-                    <Typography>Êtes-vous sûr de vouloir supprimer cette livraison ?</Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setDialogueSuppressionOuvert(false)}>Annuler</Button>
-                    <Button onClick={supprimerLivraison} variant="contained" color="error">
-                        Supprimer
                     </Button>
                 </DialogActions>
             </Dialog>
