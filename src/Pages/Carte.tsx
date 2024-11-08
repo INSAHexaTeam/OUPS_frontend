@@ -5,8 +5,10 @@ import * as turf from '@turf/turf';
 import { Button } from '@mui/material';
 import { Point, Intersection } from '../Utils/points';
 import 'leaflet/dist/leaflet.css';
+import {Action} from "../Utils/types";
 
 interface CarteProps {
+    ajoutActionStack: (action: Action) => void;
     intersections: Intersection[];
     adressesLivraisonsAjoutees: Intersection[];
     adressesLivraisonsXml: Intersection[];
@@ -72,6 +74,7 @@ const genererCouleurAleatoire = () => {
 
 
 const Carte: React.FC<CarteProps> = ({
+                                         ajoutActionStack,
                                          intersections,
                                          adressesLivraisonsAjoutees,
                                          adressesLivraisonsXml,
@@ -92,11 +95,14 @@ const Carte: React.FC<CarteProps> = ({
     const ajouterBouton = (id: number, longitude: number, latitude: number, adresse: string) => {
         const adresseExiste = adressesLivraisonsAjoutees.some((livraison) => livraison.id === id);
         if (!adresseExiste) {
+            const newIntersection = { id, longitude, latitude, adresse };
             if (!adresseEntrepot) {
-                setAdresseEntrepot({ id: id, longitude: longitude, latitude: latitude, adresse: adresse });
-            }else{
-                setAdresseLivraisonsAjoutees([...adressesLivraisonsAjoutees,
-                    { id: id, longitude: longitude, latitude: latitude, adresse: adresse }]);
+                setAdresseEntrepot(newIntersection);
+            } else {
+                setAdresseLivraisonsAjoutees([...adressesLivraisonsAjoutees, newIntersection]);
+                
+                // on ajoute l'action de l'ajout de la livraison à la stack
+                ajoutActionStack({ type: 0, intersection: newIntersection });
             }
         }
     };

@@ -6,12 +6,8 @@ import {
     Typography,
     List,
     ListItem,
-    ListItemText,
     IconButton,
     Box,
-    Accordion,
-    AccordionSummary,
-    AccordionDetails,
     Button,
     Dialog,
     DialogTitle,
@@ -25,7 +21,6 @@ import {
 import {
     DragHandle as DragHandleIcon,
     Delete as DeleteIcon,
-    ExpandMore as ExpandMoreIcon
 } from '@mui/icons-material';
 import { DragDropContext, Droppable, Draggable, DroppableProvided, DraggableProvided } from 'react-beautiful-dnd';
 
@@ -61,6 +56,7 @@ const deepCopy = <T,>(obj: T): T => {
 };
 
 interface ItineraireManagerProps {
+    isTourneeCalculee: boolean;
     itineraires: Itineraire[];
     onItinerairesChange: (newItineraires: Itineraire[]) => void;
 }
@@ -87,6 +83,7 @@ const ItineraireManager: React.FC<ItineraireManagerProps> = ({ itineraires, onIt
 
     useEffect(() => {
         const deepCopyItineraires = deepCopy(itineraires);
+        console.log("itinéraires", itineraires);
         console.log("history retard 1", history);
         console.log("history a jour", [...history, deepCopyItineraires]);
         setHistory([...history, deepCopyItineraires]);
