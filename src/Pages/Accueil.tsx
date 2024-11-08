@@ -2,7 +2,17 @@ import React, {useState, useEffect, ChangeEvent, useRef} from 'react';
 import '../Styles/Accueil.css';
 import Carte from './Carte.tsx';
 import {Intersection, Itineraire, Point} from '../Utils/points.tsx';
-import { Box, Button, CircularProgress, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
+import {
+    Box,
+    Button,
+    CircularProgress,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    Dialog,
+    DialogTitle, DialogContentText, DialogContent, DialogActions
+} from "@mui/material";
 import toast, { Toaster } from "react-hot-toast";
 import ListeRequetesLivraisonAjoutManuel from "./ListeRequetesLivraisonAjoutManuel.tsx";
 import MailIcon from '@mui/icons-material/Mail';
@@ -48,6 +58,9 @@ export default function Accueil() {
     const [pileUndoRollback, setPileUndoRollback] = useState<Action[]>([]);
     const [isRollbackDesactive, setIsRollbackDesactive] = useState(true);
     const [isUndoRollbackDesactive, setIsUndoRollbackDesactive] = useState(true);
+    const [fichierSelectionne, setFichierSelectionne] = useState<File | null>(null);
+    
+    const [dialogRequetesLivraisonOuvert, setDialogRequetesLivraisonOuvert] = useState(false);
     
     // permet d'ajouter une action à la pile
     const ajoutActionStack = (action: Action) => {
@@ -118,6 +131,15 @@ export default function Accueil() {
         // Appeler votre API ou mettre à jour la carte ici
     };
 
+    const garderRequetesLivraisons = () => {
+        if (fichierSelectionne) {
+            chargerRequetesLivraisons(fichierSelectionne);
+        }
+        setDialogRequetesLivraisonOuvert(false);
+    };
+
+        
+
 
     const definirAdressesSelonVoisins = (point: any) => {
         let adresse;
@@ -170,6 +192,39 @@ export default function Accueil() {
         }
     };
 
+    const chargerRequetesLivraisons = (file: File) => {
+        enregistrerRequetesLivraisons("CHARGEMENT", file)
+            .then((response) => {
+                const {message, data} = response;
+                const entrepot = data.entrepot;
+                const listeLivraisons = data.livraisons;
+
+                const pointDeRetrait = {
+                    id: entrepot.intersection.id,
+                    latitude: entrepot.intersection.latitude,
+                    longitude: entrepot.intersection.longitude,
+                    adresse: definirAdressesSelonVoisins(entrepot.intersection),
+                    voisins: entrepot.intersection?.voisins
+                };
+                setPointDeRetrait(pointDeRetrait);
+
+                const adressesLivraisonsMapped = listeLivraisons.map((livraison: any) => ({
+                    id: livraison.intersection.id,
+                    latitude: livraison.intersection.latitude,
+                    longitude: livraison.intersection.longitude,
+                    adresse: definirAdressesSelonVoisins(livraison.intersection),
+                    voisins: livraison.intersection.voisins
+                }));
+
+                setActionStackRollback([]);
+                setPileUndoRollback([]);
+                setAdressesLivraisonsXml(adressesLivraisonsMapped);
+                toast.success(message);
+            }).catch((error) => {
+            toast.error(error);
+        });
+    }; 
+    
     const gererLectureFichier = (file: File, isCarte: boolean = false) => {
         setIsTourneeCalculee(false);
         if (file && file.type === 'text/xml') {
@@ -193,37 +248,11 @@ export default function Accueil() {
                         setPileUndoRollback([]);
                         setPlanCharge(true);
                     } else {
-                        enregistrerRequetesLivraisons("CHARGEMENT", file)
-                            .then((response) => {
-                                const { message, data } = response;
-                                const entrepot = data.entrepot;
-                                const listeLivraisons = data.livraisons;
-
-                                const pointDeRetrait = {
-                                    id: entrepot.intersection.id,
-                                    latitude: entrepot.intersection.latitude,
-                                    longitude: entrepot.intersection.longitude,
-                                    adresse: definirAdressesSelonVoisins(entrepot.intersection),
-                                    voisins: entrepot.intersection?.voisins
-                                };
-                                console.log("pointDeRetrait", pointDeRetrait);
-                                setPointDeRetrait(pointDeRetrait);
-
-                                const adressesLivraisonsMapped = listeLivraisons.map((livraison: any) => ({
-                                    id: livraison.intersection.id,
-                                    latitude: livraison.intersection.latitude,
-                                    longitude: livraison.intersection.longitude,
-                                    adresse: definirAdressesSelonVoisins(livraison.intersection),
-                                    voisins: livraison.intersection.voisins
-                                }));
-
-                                setActionStackRollback([]);
-                                setPileUndoRollback([]);
-                                setAdressesLivraisonsXml(adressesLivraisonsMapped);
-                                toast.success(message);
-                            }).catch((error) => {
-                            toast.error(error);
-                        });
+                        if(adressesLivraisonsAjoutees.length > 0){
+                            setDialogRequetesLivraisonOuvert(true);
+                        }else {
+                            chargerRequetesLivraisons(file);
+                        }
                     }
                     setMessage(null);
                     setErreurMessage(null);
@@ -240,16 +269,10 @@ export default function Accueil() {
     };
 
     const gererSelectionFichier = (event: ChangeEvent<HTMLInputElement>, isCarte: boolean = false) => {
-
-        // On supprime les anciennes livraisons si on charge une nouvelle carte
-        if(isCarte){
-            setAdressesLivraisonsXml([]);
-            setAdresseLivraisonsAjoutees([]);
-        }
-
         setPointDeRetrait(null);
         const file = event.target.files?.[0];
         if (file) {
+            setFichierSelectionne(file);
             gererLectureFichier(file, isCarte);
         }
     };
@@ -295,6 +318,15 @@ export default function Accueil() {
             setChargemementCalculTournee(false);
         }
     };
+
+    function supprimerRequetesLivraisons() {
+        // on supprime les adresses rentrées par l'utilisateur
+        setAdresseLivraisonsAjoutees([]);
+        if (fichierSelectionne) {
+            chargerRequetesLivraisons(fichierSelectionne);
+        }
+        setDialogRequetesLivraisonOuvert(false);
+    }
 
     return (
         <Box sx={{ display: "flex", flexDirection: "row", width: '100%', height: '100%', justifyContent: "center" }}>
@@ -426,6 +458,26 @@ export default function Accueil() {
                     />
                 )}
             </Box>
+
+            <Dialog onClose={() => setDialogRequetesLivraisonOuvert(false)}
+                    open={dialogRequetesLivraisonOuvert}>
+                <DialogTitle sx={{ fontWeight: 'bold' }}>
+                    {"Garder les requêtes de livraisons ? "}
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Voulez-vous garder les requêtes de livraisons que vous avez ajouter à la mains ? 
+                        L'entrepôt sera, lui, remplacé par le nouvel entrepôt.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={supprimerRequetesLivraisons} autoFocus sx={{ color: 'red' }}>
+                        Supprimer
+                    </Button>
+                    <Button onClick={garderRequetesLivraisons} sx={{ color: 'green' }}>Garder</Button>
+                </DialogActions>
+            </Dialog>
+            
         </Box>
     );
 }
