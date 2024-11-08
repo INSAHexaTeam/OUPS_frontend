@@ -5,8 +5,11 @@ import * as turf from '@turf/turf';
 import { Button } from '@mui/material';
 import { Point, Intersection } from '../Utils/points';
 import 'leaflet/dist/leaflet.css';
+import {Action} from "../Utils/types";
 
 interface CarteProps {
+    ajoutActionStack: (action: Action) => void;
+    viderListeUndoRollback : () => void;
     intersections: Intersection[];
     adressesLivraisonsAjoutees: Intersection[];
     adressesLivraisonsXml: Intersection[];
@@ -75,6 +78,8 @@ const couleursItineraires = ['#FF0000', '#0000FF', '#808080', '#DE2AEE', '#00800
 
 
 const Carte: React.FC<CarteProps> = ({
+                                         ajoutActionStack,
+                                         viderListeUndoRollback,
                                          intersections,
                                          adressesLivraisonsAjoutees,
                                          adressesLivraisonsXml,
@@ -101,11 +106,19 @@ const Carte: React.FC<CarteProps> = ({
     const ajouterBouton = (id: number, longitude: number, latitude: number, adresse: string) => {
         const adresseExiste = adressesLivraisonsAjoutees.some((livraison) => livraison.id === id);
         if (!adresseExiste) {
+            const newIntersection = { id, longitude, latitude, adresse };
             if (!adresseEntrepot) {
-                setAdresseEntrepot({ id: id, longitude: longitude, latitude: latitude, adresse: adresse });
-            }else{
-                setAdresseLivraisonsAjoutees([...adressesLivraisonsAjoutees,
-                    { id: id, longitude: longitude, latitude: latitude, adresse: adresse }]);
+                // on ajoute l'action de l'ajout de la livraison à la stack
+                ajoutActionStack({ type: 0, intersection: newIntersection, isEntrepot: true });
+                
+                setAdresseEntrepot(newIntersection);
+            } else {
+                setAdresseLivraisonsAjoutees([...adressesLivraisonsAjoutees, newIntersection]);
+                // vider la liste undo rollback car une action a été effectuée
+                viderListeUndoRollback();
+                
+                // on ajoute l'action de l'ajout de la livraison à la stack
+                ajoutActionStack({ type: 0, intersection: newIntersection,  isEntrepot: false });
             }
         }
     };

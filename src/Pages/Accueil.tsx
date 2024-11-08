@@ -1,7 +1,7 @@
 import React, {useState, useEffect, ChangeEvent, useRef} from 'react';
 import '../Styles/Accueil.css';
 import Carte from './Carte.tsx';
-import { Intersection, Point } from '../Utils/points.tsx';
+import {Intersection, Itineraire, Point} from '../Utils/points.tsx';
 import { Box, Button, CircularProgress, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
 import toast, { Toaster } from "react-hot-toast";
 import ListeRequetesLivraisonAjoutManuel from "./ListeRequetesLivraisonAjoutManuel.tsx";
@@ -14,6 +14,7 @@ import '../Styles/Accueil.css';
 import {calculerItineraire} from "../Appels_api/calculerItineraire.ts";
 import {styled} from "@mui/material/styles";
 import ItineraireManager from "./GestionnaireItineraire.tsx";
+import {Action} from "../Utils/types";
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -27,6 +28,8 @@ const VisuallyHiddenInput = styled('input')({
     width: 1,
 });
 
+const actionStackRollback: Action[] = [];
+
 export default function Accueil() {
     const [message, setMessage] = useState<string | null>(null);
     const [erreurMessage, setErreurMessage] = useState<string | null>(null);
@@ -37,12 +40,72 @@ export default function Accueil() {
     const [listesTotalAdressesLivraisons, setListesTotalAdressesLivraisons] = useState<Intersection[]>([]);
     const [pointDeRetrait, setPointDeRetrait] = useState<Intersection | null>(null);
     const [planCharge, setPlanCharge] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [numCouriers, setNumCouriers] = useState(1); // New state for number of couriers
+    const [numCouriers, setNumCouriers] = useState(1);
     const zoomToPointRef = useRef<(latitude: number, longitude: number) => void>(() => {});
     const [itineraires, setItineraires] = useState<any[]>([]);
     const [isTourneeCalculee, setIsTourneeCalculee] = useState(false);
+    const [actionStackRollback, setActionStackRollback] = useState<Action[]>([]);
+    const [pileUndoRollback, setPileUndoRollback] = useState<Action[]>([]);
+    const [isRollbackDesactive, setIsRollbackDesactive] = useState(true);
+    const [isUndoRollbackDesactive, setIsUndoRollbackDesactive] = useState(true);
+    
+    // permet d'ajouter une action à la pile
+    const ajoutActionStack = (action: Action) => {
+        setActionStackRollback(prev => [...prev, action]);
+    };
 
+    useEffect(() => {
+        setIsRollbackDesactive(actionStackRollback.length === 0);
+        setIsUndoRollbackDesactive(pileUndoRollback.length === 0);
+    }, [actionStackRollback, pileUndoRollback]);
+    
+    // permet de défaire la dernière action
+    const rollbackDerniereAction = () => {
+        setActionStackRollback(prev => {
+            const lastAction = prev.pop();
+            if (lastAction) {
+                // Ajouter l'action à la pile de undo rollback
+                setPileUndoRollback(prevUndo => [...prevUndo, lastAction]);
+                if (lastAction.type === 1) {
+                    setAdresseLivraisonsAjoutees(prev => [...prev, lastAction.intersection]);
+                } else if (lastAction.type === 0) {
+                    if (lastAction.isEntrepot){
+                        setPointDeRetrait(null);
+                    }else{
+                        setAdresseLivraisonsAjoutees(prev => prev.filter(intersection => intersection.id !== lastAction.intersection.id));
+                    }
+                }
+            }
+            return [...prev];
+        });
+    };
+
+    // permet de défaire la dernière action de rollback
+    const undoDernierRollback = () => {
+        setPileUndoRollback(prev => {
+            const lastUndoAction = prev.pop();
+            if (lastUndoAction) {
+                // Ajouter l'action à la pile de rollback
+                setActionStackRollback(prevRollback => [...prevRollback, lastUndoAction]);
+                if (lastUndoAction.type === 1) {
+                    setAdresseLivraisonsAjoutees(prev => prev.filter(intersection => intersection.id !== lastUndoAction.intersection.id));
+                } else if (lastUndoAction.type === 0) {
+                    if (lastUndoAction.isEntrepot){
+                        setPointDeRetrait(lastUndoAction.intersection);
+                    }else {
+                        setAdresseLivraisonsAjoutees(prev => [...prev, lastUndoAction.intersection]);
+                    }
+                }
+            }
+            return [...prev];
+        });
+    };
+    
+    // permet de vider la liste  
+    const viderListeUndoRollback = () => {
+        setPileUndoRollback([]);
+    }
+    
     const [chargementPlanEnCours, setChargementPlanEnCours] = useState(false);
     const [chargemementCalculTournee, setChargemementCalculTournee] = useState(false);
 
@@ -128,6 +191,8 @@ export default function Accueil() {
                             toast.error(error);
                             setChargementPlanEnCours(false);
                         });
+                        setActionStackRollback([]);
+                        setPileUndoRollback([]);
                         setPlanCharge(true);
                     } else {
                         enregistrerRequetesLivraisons("CHARGEMENT", file)
@@ -154,7 +219,8 @@ export default function Accueil() {
                                     voisins: livraison.intersection.voisins
                                 }));
 
-                                console.log("adressesLivraisonsMapped", adressesLivraisonsMapped);
+                                setActionStackRollback([]);
+                                setPileUndoRollback([]);
                                 setAdressesLivraisonsXml(adressesLivraisonsMapped);
                                 toast.success(message);
                             }).catch((error) => {
@@ -291,6 +357,8 @@ export default function Accueil() {
                         <Box sx={{display: 'flex', flexDirection: 'row', gap: '2dvw'}}>
                             <Box sx={{width: '60%'}}>
                                 <Carte
+                                    ajoutActionStack={ajoutActionStack}
+                                    viderListeUndoRollback={viderListeUndoRollback}
                                     intersections={intersections}
                                     setAdresseLivraisonsAjoutees={setAdresseLivraisonsAjoutees}
                                     adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
@@ -305,6 +373,12 @@ export default function Accueil() {
 
                             <Box sx={{width: '40%', overflowY: 'auto'}}>
                                 <ListeRequetesLivraisonAjoutManuel
+                                    ajoutActionStack={ajoutActionStack}
+                                    rollbackDerniereAction={rollbackDerniereAction}
+                                    undoDernierRollback={undoDernierRollback}
+                                    viderListeUndoRollback={viderListeUndoRollback}
+                                    isRollbackDesactive={isRollbackDesactive}
+                                    isUndoRollbackDesactive={isUndoRollbackDesactive}
                                     adressesLivraisonsXml={adressesLivraisonsXml}
                                     adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
                                     setAdresseLivraisonsXml={setAdressesLivraisonsXml}
@@ -348,12 +422,14 @@ export default function Accueil() {
                         
                     </Box>
                 )}
-                <ItineraireManager
-                    itineraires={itineraires}
-                    onChangementItineraires={gereLesChangeementsdItineraire}
-                    itineraireSelectionne={itineraireSelectionne}
-                    onSelectionItineraire={setItineraireSelectionne}
-                />
+                {isTourneeCalculee && (
+                    <ItineraireManager
+                        itineraires={itineraires}
+                        onChangementItineraires={gereLesChangeementsdItineraire}
+                        itineraireSelectionne={itineraireSelectionne}
+                        onSelectionItineraire={setItineraireSelectionne}
+                    />
+                )}
             </Box>
         </Box>
     );

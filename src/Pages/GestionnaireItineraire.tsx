@@ -6,12 +6,8 @@ import {
     Typography,
     List,
     ListItem,
-    ListItemText,
     IconButton,
     Box,
-    Accordion,
-    AccordionSummary,
-    AccordionDetails,
     Button,
     Dialog,
     DialogTitle,
@@ -97,8 +93,6 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     useEffect(() => {
         if (!retourEnCours) {
             const deepCopyItineraires = deepCopy(itineraires);
-            console.log("history retard 1", historique);
-            console.log("history a jour", [...historique, deepCopyItineraires]);
             setHistorique([...historique, deepCopyItineraires]);
         }
         else {
