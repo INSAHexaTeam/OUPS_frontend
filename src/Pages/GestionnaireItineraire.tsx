@@ -29,7 +29,7 @@ import {
 } from '@mui/icons-material';
 import { DragDropContext, Droppable, Draggable, DroppableProvided, DraggableProvided } from 'react-beautiful-dnd';
 
-interface Livraison {
+interface PointLivraison {
     intersection: {
         id: number;
         latitude: number;
@@ -49,7 +49,7 @@ interface Itineraire {
                 adresse?: string;
             };
         };
-        livraisons: Livraison[];
+        livraisons: PointLivraison[];
         coursier?: number;
     };
     cheminIntersections: any[];
@@ -60,19 +60,20 @@ const deepCopy = <T,>(obj: T): T => {
     return JSON.parse(JSON.stringify(obj));
 };
 
-interface ItineraireManagerProps {
+interface GestionnaireItineraireProps {
     itineraires: Itineraire[];
-    onItinerairesChange: (newItineraires: Itineraire[]) => void;
+    onChangementItineraires: (nouveauxItineraires: Itineraire[]) => void;
 }
 
-const ItineraireManager: React.FC<ItineraireManagerProps> = ({ itineraires, onItinerairesChange }) => {
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [selectedLivraison, setSelectedLivraison] = useState<any>(null);
-    const [selectedCoursier, setSelectedCoursier] = useState<number>(0);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [livraisonToDelete, setLivraisonToDelete] = useState<{ livraison: Livraison, coursierIndex: number } | null>(null);
-    const [history, setHistory] = useState<Itineraire[][]>([itineraires]);
-    const [isModified, setIsModified] = useState(false);
+const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({ itineraires, onChangementItineraires }) => {
+    const [dialogueOuvert, setDialogueOuvert] = useState(false);
+    const [livraisonSelectionnee, setLivraisonSelectionnee] = useState<any>(null);
+    const [coursierSelectionne, setCoursierSelectionne] = useState<number>(0);
+    const [dialogueSuppressionOuvert, setDialogueSuppressionOuvert] = useState(false);
+    const [livraisonASupprimer, setLivraisonASupprimer] = useState<{ livraison: PointLivraison, indexCoursier: number } | null>(null);
+    const [historique, setHistorique] = useState<Itineraire[][]>([itineraires]);
+    const [estModifie, setEstModifie] = useState(false);
+    const [retourEnCours, setRetourEnCours] = useState(false);
 
 
     //l'objet itinéraire est une liste de livraisons par coursier : itinéraire = [livraisonPourCoursier1, livraisonPourCoursier2, ...]
@@ -86,106 +87,110 @@ const ItineraireManager: React.FC<ItineraireManagerProps> = ({ itineraires, onIt
     //vu que thomas vas changer le backend, il risque de falloir modifier ce code
 
     useEffect(() => {
-        const deepCopyItineraires = deepCopy(itineraires);
-        console.log("history retard 1", history);
-        console.log("history a jour", [...history, deepCopyItineraires]);
-        setHistory([...history, deepCopyItineraires]);
+        if (!retourEnCours) {
+            const deepCopyItineraires = deepCopy(itineraires);
+            console.log("history retard 1", historique);
+            console.log("history a jour", [...historique, deepCopyItineraires]);
+            setHistorique([...historique, deepCopyItineraires]);
+        }
+        else {
+            setRetourEnCours(false);
+        }
     }, [itineraires]);
 
-    const handleDragEnd = (result: any) => {
-        if (!result.destination) return;
+    const gererFinGlisserDeposer = (resultat: any) => {
+        if (!resultat.destination) return;
 
-        const { source, destination } = result;
-        const newItineraires = [...itineraires];
+        const { source, destination } = resultat;
+        const nouveauxItineraires = [...itineraires];
 
         // Si le déplacement est dans le même itinéraire
         if (source.droppableId === destination.droppableId) {
             const itineraireIndex = parseInt(source.droppableId);
-            const livraisons = [...newItineraires[itineraireIndex].livraisons.livraisons];
+            const livraisons = [...nouveauxItineraires[itineraireIndex].livraisons.livraisons];
             const [removed] = livraisons.splice(source.index, 1);
             livraisons.splice(destination.index, 0, removed);
-            newItineraires[itineraireIndex].livraisons.livraisons = livraisons;
+            nouveauxItineraires[itineraireIndex].livraisons.livraisons = livraisons;
         } else {
             // Si le déplacement est entre différents itinéraires
             const sourceItineraireIndex = parseInt(source.droppableId);
             const destItineraireIndex = parseInt(destination.droppableId);
 
-            const sourceLivraisons = [...newItineraires[sourceItineraireIndex].livraisons.livraisons];
-            const destLivraisons = [...newItineraires[destItineraireIndex].livraisons.livraisons];
+            const sourceLivraisons = [...nouveauxItineraires[sourceItineraireIndex].livraisons.livraisons];
+            const destLivraisons = [...nouveauxItineraires[destItineraireIndex].livraisons.livraisons];
 
             const [removed] = sourceLivraisons.splice(source.index, 1);
             destLivraisons.splice(destination.index, 0, removed);
 
-            newItineraires[sourceItineraireIndex].livraisons.livraisons = sourceLivraisons;
-            newItineraires[destItineraireIndex].livraisons.livraisons = destLivraisons;
+            nouveauxItineraires[sourceItineraireIndex].livraisons.livraisons = sourceLivraisons;
+            nouveauxItineraires[destItineraireIndex].livraisons.livraisons = destLivraisons;
         }
 
-        updateItineraires(newItineraires);
+        mettreAJourItineraires(nouveauxItineraires);
     };
 
-    const handleEditLivraison = (livraison: Livraison, coursierIndex: number) => {
-        setSelectedLivraison({ ...livraison, coursierIndex });
-        setSelectedCoursier(coursierIndex);
-        setIsDialogOpen(true);
+    const gererModificationLivraison = (livraison: PointLivraison, indexCoursier: number) => {
+        setLivraisonSelectionnee({ ...livraison, indexCoursier });
+        setCoursierSelectionne(indexCoursier);
+        setDialogueOuvert(true);
     };
 
-    const handleSaveEdit = () => {
-        if (!selectedLivraison) return;
+    const sauvegarderModification = () => {
+        if (!livraisonSelectionnee) return;
 
-        const newItineraires = [...itineraires];
+        const nouveauxItineraires = [...itineraires];
 
         // Retirer la livraison de son itinéraire actuel
-        const oldItineraire = newItineraires[selectedLivraison.coursierIndex];
+        const oldItineraire = nouveauxItineraires[livraisonSelectionnee.indexCoursier];
         oldItineraire.livraisons.livraisons = oldItineraire.livraisons.livraisons.filter(
-            l => l.intersection.id !== selectedLivraison.intersection.id
+            l => l.intersection.id !== livraisonSelectionnee.intersection.id
         );
 
         // Ajouter la livraison au nouvel itinéraire
-        const newItineraire = newItineraires[selectedCoursier];
-        newItineraire.livraisons.livraisons.push(selectedLivraison);
+        const newItineraire = nouveauxItineraires[coursierSelectionne];
+        newItineraire.livraisons.livraisons.push(livraisonSelectionnee);
 
-        onItinerairesChange(newItineraires);
-        setIsDialogOpen(false);
+        onChangementItineraires(nouveauxItineraires);
+        setDialogueOuvert(false);
     };
 
-    const handleDeleteLivraison = () => {
-        if (!livraisonToDelete) return;
+    const supprimerLivraison = () => {
+        if (!livraisonASupprimer) return;
 
-        const newItineraires = [...itineraires];
-        const { livraison, coursierIndex } = livraisonToDelete;
+        const nouveauxItineraires = [...itineraires];
+        const { livraison, indexCoursier } = livraisonASupprimer;
 
         // Retirer la livraison de son itinéraire actuel
-        const itineraire = newItineraires[coursierIndex];
+        const itineraire = nouveauxItineraires[indexCoursier];
         itineraire.livraisons.livraisons = itineraire.livraisons.livraisons.filter(
             l => l.intersection.id !== livraison.intersection.id
         );
 
-        updateItineraires(newItineraires);
-        setIsDeleteDialogOpen(false);
+        mettreAJourItineraires(nouveauxItineraires);
+        setDialogueSuppressionOuvert(false);
     };
 
-    const handleUndo = () => {
-        if (history.length > 1) {
-            console.log("history", history);
-            const newHistory = [...history];
+    const annulerDerniereAction = () => {
+        setRetourEnCours(true);
+        if (historique.length > 1) {
+            console.log("history", historique);
+            const newHistory = [...historique];
             newHistory.pop();
             const previousState = newHistory[newHistory.length - 1];
-            setHistory(newHistory);
-            onItinerairesChange(deepCopy(previousState));
-            setIsModified(true);
+            setHistorique(newHistory);
+            onChangementItineraires(deepCopy(previousState));
+            setEstModifie(true);
         }
     };
 
-    const updateItineraires = (newItineraires: Itineraire[]) => {
-
-        // setHistory([...history, newItineraires]);
-        onItinerairesChange(newItineraires);
-        setIsModified(true);
+    const mettreAJourItineraires = (nouveauxItineraires: Itineraire[]) => {
+        onChangementItineraires(nouveauxItineraires);
+        setEstModifie(true);
     };
 
-    const handleApiCall = () => {
+    const appelerAPI = () => {
         console.log("Appel API effectué avec les itinéraires mis à jour");
-        setIsModified(false);
+        setEstModifie(false);
     };
 
     return (
@@ -194,15 +199,15 @@ const ItineraireManager: React.FC<ItineraireManagerProps> = ({ itineraires, onIt
                 Gestion des Itinéraires
             </Typography>
 
-            <Button onClick={handleUndo} disabled={history.length <= 1} variant="outlined" sx={{ mb: 2 }}>
+            <Button onClick={annulerDerniereAction} disabled={historique.length <= 1} variant="outlined" sx={{ mb: 2 }}>
                 Annuler la dernière action
             </Button>
 
-            <Button onClick={handleApiCall} disabled={!isModified} variant="contained" sx={{ mb: 2, ml: 2 }}>
+            <Button onClick={appelerAPI} disabled={!estModifie} variant="contained" sx={{ mb: 2, ml: 2 }}>
                 Envoyer les modifications
             </Button>
 
-            <DragDropContext onDragEnd={handleDragEnd}>
+            <DragDropContext onDragEnd={gererFinGlisserDeposer}>
                 <Box sx={{
                     display: 'flex',
                     gap: 2,
@@ -285,8 +290,8 @@ const ItineraireManager: React.FC<ItineraireManagerProps> = ({ itineraires, onIt
                                                                 <IconButton
                                                                     size="small"
                                                                     onClick={() => {
-                                                                        setLivraisonToDelete({ livraison, coursierIndex: index });
-                                                                        setIsDeleteDialogOpen(true);
+                                                                        setLivraisonASupprimer({ livraison: livraison, indexCoursier: index });
+                                                                        setDialogueSuppressionOuvert(true);
                                                                     }}
                                                                 >
                                                                     <DeleteIcon />
@@ -306,14 +311,14 @@ const ItineraireManager: React.FC<ItineraireManagerProps> = ({ itineraires, onIt
                 </Box>
             </DragDropContext>
 
-            <Dialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)}>
+            <Dialog open={dialogueOuvert} onClose={() => setDialogueOuvert(false)}>
                 <DialogTitle>Modifier la livraison</DialogTitle>
                 <DialogContent>
                     <FormControl fullWidth sx={{ mt: 2 }}>
                         <InputLabel>Coursier</InputLabel>
                         <Select
-                            value={selectedCoursier}
-                            onChange={(e) => setSelectedCoursier(e.target.value as number)}
+                            value={coursierSelectionne}
+                            onChange={(e) => setCoursierSelectionne(e.target.value as number)}
                         >
                             {itineraires.map((_, index) => (
                                 <MenuItem key={index} value={index}>
@@ -324,21 +329,21 @@ const ItineraireManager: React.FC<ItineraireManagerProps> = ({ itineraires, onIt
                     </FormControl>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setIsDialogOpen(false)}>Annuler</Button>
-                    <Button onClick={handleSaveEdit} variant="contained">
+                    <Button onClick={() => setDialogueOuvert(false)}>Annuler</Button>
+                    <Button onClick={sauvegarderModification} variant="contained">
                         Sauvegarder
                     </Button>
                 </DialogActions>
             </Dialog>
 
-            <Dialog open={isDeleteDialogOpen} onClose={() => setIsDeleteDialogOpen(false)}>
+            <Dialog open={dialogueSuppressionOuvert} onClose={() => setDialogueSuppressionOuvert(false)}>
                 <DialogTitle>Confirmer la suppression</DialogTitle>
                 <DialogContent>
                     <Typography>Êtes-vous sûr de vouloir supprimer cette livraison ?</Typography>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setIsDeleteDialogOpen(false)}>Annuler</Button>
-                    <Button onClick={handleDeleteLivraison} variant="contained" color="error">
+                    <Button onClick={() => setDialogueSuppressionOuvert(false)}>Annuler</Button>
+                    <Button onClick={supprimerLivraison} variant="contained" color="error">
                         Supprimer
                     </Button>
                 </DialogActions>
@@ -347,4 +352,4 @@ const ItineraireManager: React.FC<ItineraireManagerProps> = ({ itineraires, onIt
     );
 };
 
-export default ItineraireManager;
+export default GestionnaireItineraire;

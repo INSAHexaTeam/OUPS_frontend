@@ -347,7 +347,7 @@ export default function Accueil() {
                 )}
                 <ItineraireManager
                     itineraires={itineraires}
-                    onItinerairesChange={gereLesChangeementsdItineraire}
+                    onChangementItineraires={gereLesChangeementsdItineraire}
                 />
             </Box>
         </Box>
