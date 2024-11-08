@@ -70,6 +70,8 @@ const genererCouleurAleatoire = () => {
     return color;
 };
 
+const couleursItineraires = ['#FF0000', '#0000FF', '#808080', '#DE2AEE', '#008000'];
+
 
 const Carte: React.FC<CarteProps> = ({
                                          intersections,
@@ -179,7 +181,7 @@ const Carte: React.FC<CarteProps> = ({
             />
             {/* Tracer les itinéraires entre l'entrepôt et les livraisons */}
             {adresseEntrepot && itineraires.map((itineraire, index) => {
-                const color = genererCouleurAleatoire();
+                const color = couleursItineraires[index % couleursItineraires.length];
 
                 // Calculer le décalage pour chaque trajet
                 // Le premier trajet n'est pas décalé, les suivants sont décalés progressivement
