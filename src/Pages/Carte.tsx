@@ -29,6 +29,7 @@ interface CarteProps {
             }[];
         };
     }[];
+    itineraireSelectionne?: number; // Nouvel index pour l'itinéraire sélectionné
 }
 
 const marqueurIntersections = new L.Icon({
@@ -73,6 +74,8 @@ const genererCouleurAleatoire = () => {
     return color;
 };
 
+const couleursItineraires = ['#FF0000', '#0000FF', '#808080', '#DE2AEE', '#008000'];
+
 
 const Carte: React.FC<CarteProps> = ({
                                          ajoutActionStack,
@@ -84,7 +87,8 @@ const Carte: React.FC<CarteProps> = ({
                                          adresseEntrepot,
                                          setAdresseEntrepot,
                                          zoomerVersPoint,
-                                         itineraires
+                                         itineraires,
+                                         itineraireSelectionne
                                      }) => {
     const [niveauZoom, setNiveauZoom] = useState<number>(13);
     const [convexHull, setConvexHull] = useState<any>(null);
@@ -93,6 +97,11 @@ const Carte: React.FC<CarteProps> = ({
     const refCarte = useRef<L.Map>(null); // Reference to the map
 
     const minNiveauZoomForIntersections = 16;
+
+    console.log("Props reçues dans Carte:", {
+        nombreItineraires: itineraires.length,
+        itineraireSelectionne: itineraireSelectionne
+    });
 
     const ajouterBouton = (id: number, longitude: number, latitude: number, adresse: string) => {
         const adresseExiste = adressesLivraisonsAjoutees.some((livraison) => livraison.id === id);
@@ -184,6 +193,21 @@ const Carte: React.FC<CarteProps> = ({
         ];
     };
 
+    // Ajouter cet effet pour logger l'itinéraire sélectionné
+    useEffect(() => {
+        console.log("État de l'itinéraire sélectionné:", itineraireSelectionne);
+        if (itineraireSelectionne !== undefined) {
+            const itineraire = itineraires[itineraireSelectionne];
+            console.log(`Itinéraire ${itineraireSelectionne + 1} sélectionné:`, {
+                nombreLivraisons: itineraire.livraisons.livraisons.length,
+                cheminIntersections: itineraire.cheminIntersections.length,
+                details: itineraire
+            });
+        } else {
+            console.log("Aucun itinéraire sélectionné");
+        }
+    }, [itineraireSelectionne, itineraires]);
+
     return (
         <MapContainer center={[45.75, 4.85]} zoom={niveauZoom} style={{height: '400px', width: '100%'}} ref={refCarte}>
             <MapEvents/>
@@ -192,15 +216,15 @@ const Carte: React.FC<CarteProps> = ({
             />
             {/* Tracer les itinéraires entre l'entrepôt et les livraisons */}
             {adresseEntrepot && itineraires.map((itineraire, index) => {
-                const color = genererCouleurAleatoire();
+                const color = couleursItineraires[index % couleursItineraires.length];
+                const offset = index * 1;
+                
+                // Ne pas rendre l'itinéraire s'il est sélectionné (on le rendra après)
+                if (itineraireSelectionne !== undefined && index === itineraireSelectionne) {
+                    return null;
+                }
 
-                // Calculer le décalage pour chaque trajet
-                // Le premier trajet n'est pas décalé, les suivants sont décalés progressivement
-                const offset = index * 1; // 20 mètres de décalage entre chaque trajet
-
-                // Créer le trajet décalé
                 const offsetPositions = itineraire.cheminIntersections.map(intersection => {
-                    // Décaler le point perpendiculairement au trajet
                     return offsetLatLng(
                         intersection.latitude,
                         intersection.longitude,
@@ -209,22 +233,22 @@ const Carte: React.FC<CarteProps> = ({
                     );
                 });
 
+                // Utiliser l'opacité normale si aucun itinéraire n'est sélectionné
+                const isNormalOpacity = itineraireSelectionne === undefined;
+
                 return (
                     <React.Fragment key={index}>
-                        {/* Contour blanc */}
                         <Polyline
                             positions={offsetPositions}
                             color={'white'}
-                            weight={8}
-                            opacity={0.6}
+                            weight={8}  // Épaisseur normale
+                            opacity={1}  // Opacité normale
                         />
-
-                        {/* Ligne colorée principale */}
                         <Polyline
                             positions={offsetPositions}
                             color={color}
-                            weight={4}
-                            opacity={1}
+                            weight={4}  // Épaisseur normale
+                            opacity={1}  // Opacité normale
                         >
                             <Popup>Tournée {index + 1}</Popup>
                         </Polyline>
@@ -329,6 +353,87 @@ const Carte: React.FC<CarteProps> = ({
             {convexHull && (
                 <Polygon positions={convexHull} pathOptions={polygonStyle}/>
             )}
+
+            {/* Rendre l'itinéraire sélectionné en dernier pour qu'il soit au premier plan */}
+            {adresseEntrepot && itineraireSelectionne !== undefined && (() => {
+                const itineraire = itineraires[itineraireSelectionne];
+                const color = couleursItineraires[itineraireSelectionne % couleursItineraires.length];
+                const offset = itineraireSelectionne * 1;
+
+                const offsetPositions = itineraire.cheminIntersections.map(intersection => {
+                    return offsetLatLng(
+                        intersection.latitude,
+                        intersection.longitude,
+                        offset,
+                        offset
+                    );
+                });
+
+                return (
+                    <React.Fragment key={`selected-${itineraireSelectionne}`}>
+                        <Polyline
+                            positions={offsetPositions}
+                            color={'white'}
+                            weight={12}  // Épaisseur plus importante
+                            opacity={1}  // Opacité normale
+                        />
+                        <Polyline
+                            positions={offsetPositions}
+                            color={color}
+                            weight={6}  // Épaisseur plus importante
+                            opacity={1}  // Opacité normale
+                        >
+                            <Popup>Tournée {itineraireSelectionne + 1}</Popup>
+                        </Polyline>
+
+                        {/* Marqueurs pour les points de livraison de l'itinéraire sélectionné */}
+                        {itineraire.livraisons.livraisons
+                            .filter(livraison => livraison?.estUneLivraison)
+                            .map((livraison, livraisonIndex) => {
+                                const [offsetLat, offsetLng] = offsetLatLng(
+                                    livraison?.intersection?.latitude,
+                                    livraison?.intersection?.longitude,
+                                    offset,
+                                    offset
+                                );
+
+                                return (
+                                    <Marker
+                                        key={`selected-${itineraireSelectionne}-${livraisonIndex}`}
+                                        position={[offsetLat, offsetLng]}
+                                        icon={L.divIcon({
+                                            html: `
+                                                <div style="
+                                                    background-color: ${color};
+                                                    color: white;
+                                                    border-radius: 50%;
+                                                    width: 24px;
+                                                    height: 24px;
+                                                    display: flex;
+                                                    align-items: center;
+                                                    justify-content: center;
+                                                    font-weight: bold;
+                                                    border: 2px solid white;
+                                                    font-size: 12px;
+                                                ">
+                                                    ${livraisonIndex + 1}
+                                                </div>
+                                            `,
+                                            className: 'custom-div-icon',
+                                            iconSize: [24, 24],
+                                            iconAnchor: [12, 12]
+                                        })}
+                                    >
+                                        <Popup>
+                                            <div>Point de livraison {livraisonIndex + 1}</div>
+                                            <div>ID: {livraison?.intersection?.id}</div>
+                                        </Popup>
+                                    </Marker>
+                                );
+                            })}
+                    </React.Fragment>
+                );
+            })()}
         </MapContainer>
     );
 };

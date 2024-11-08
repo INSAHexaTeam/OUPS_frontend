@@ -122,6 +122,8 @@ export default function Accueil() {
     const [chargementPlanEnCours, setChargementPlanEnCours] = useState(false);
     const [chargemementCalculTournee, setChargemementCalculTournee] = useState(false);
 
+    const [itineraireSelectionne, setItineraireSelectionne] = useState<number | undefined>(undefined);
+
     useEffect(() => {
         setListesTotalAdressesLivraisons([...adressesLivraisonsAjoutees, ...adressesLivraisonsXml]);
     }, [adressesLivraisonsAjoutees, adressesLivraisonsXml]);
@@ -397,6 +399,7 @@ export default function Accueil() {
                                     setAdresseEntrepot={setPointDeRetrait}
                                     zoomerVersPoint={(fn) => { zoomToPointRef.current = fn; }}
                                     itineraires={itineraires}
+                                    itineraireSelectionne={itineraireSelectionne}
                                 />
                             </Box>
 
@@ -454,7 +457,9 @@ export default function Accueil() {
                 {isTourneeCalculee && (
                     <ItineraireManager
                         itineraires={itineraires}
-                        onItinerairesChange={gereLesChangeementsdItineraire}
+                        onChangementItineraires={gereLesChangeementsdItineraire}
+                        itineraireSelectionne={itineraireSelectionne}
+                        onSelectionItineraire={setItineraireSelectionne}
                     />
                 )}
             </Box>
