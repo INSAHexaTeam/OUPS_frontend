@@ -9,6 +9,7 @@ import {Action} from "../Utils/types";
 
 interface CarteProps {
     ajoutActionStack: (action: Action) => void;
+    viderListeUndoRollback : () => void;
     intersections: Intersection[];
     adressesLivraisonsAjoutees: Intersection[];
     adressesLivraisonsXml: Intersection[];
@@ -75,6 +76,7 @@ const genererCouleurAleatoire = () => {
 
 const Carte: React.FC<CarteProps> = ({
                                          ajoutActionStack,
+                                         viderListeUndoRollback,
                                          intersections,
                                          adressesLivraisonsAjoutees,
                                          adressesLivraisonsXml,
@@ -97,12 +99,17 @@ const Carte: React.FC<CarteProps> = ({
         if (!adresseExiste) {
             const newIntersection = { id, longitude, latitude, adresse };
             if (!adresseEntrepot) {
+                // on ajoute l'action de l'ajout de la livraison à la stack
+                ajoutActionStack({ type: 0, intersection: newIntersection, isEntrepot: true });
+                
                 setAdresseEntrepot(newIntersection);
             } else {
                 setAdresseLivraisonsAjoutees([...adressesLivraisonsAjoutees, newIntersection]);
+                // vider la liste undo rollback car une action a été effectuée
+                viderListeUndoRollback();
                 
                 // on ajoute l'action de l'ajout de la livraison à la stack
-                ajoutActionStack({ type: 0, intersection: newIntersection });
+                ajoutActionStack({ type: 0, intersection: newIntersection,  isEntrepot: false });
             }
         }
     };

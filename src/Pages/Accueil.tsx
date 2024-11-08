@@ -40,13 +40,14 @@ export default function Accueil() {
     const [listesTotalAdressesLivraisons, setListesTotalAdressesLivraisons] = useState<Intersection[]>([]);
     const [pointDeRetrait, setPointDeRetrait] = useState<Intersection | null>(null);
     const [planCharge, setPlanCharge] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [numCouriers, setNumCouriers] = useState(1); // New state for number of couriers
+    const [numCouriers, setNumCouriers] = useState(1);
     const zoomToPointRef = useRef<(latitude: number, longitude: number) => void>(() => {});
     const [itineraires, setItineraires] = useState<any[]>([]);
     const [isTourneeCalculee, setIsTourneeCalculee] = useState(false);
     const [actionStackRollback, setActionStackRollback] = useState<Action[]>([]);
+    const [pileUndoRollback, setPileUndoRollback] = useState<Action[]>([]);
     const [isRollbackDesactive, setIsRollbackDesactive] = useState(true);
+    const [isUndoRollbackDesactive, setIsUndoRollbackDesactive] = useState(true);
     
     // permet d'ajouter une action à la pile
     const ajoutActionStack = (action: Action) => {
@@ -55,25 +56,56 @@ export default function Accueil() {
 
     useEffect(() => {
         setIsRollbackDesactive(actionStackRollback.length === 0);
-    }, [actionStackRollback]);
+        setIsUndoRollbackDesactive(pileUndoRollback.length === 0);
+    }, [actionStackRollback, pileUndoRollback]);
     
+    // permet de défaire la dernière action
     const rollbackDerniereAction = () => {
         setActionStackRollback(prev => {
-            // pop récupère le dernier élément du tableau et le supprime
             const lastAction = prev.pop();
             if (lastAction) {
+                // Ajouter l'action à la pile de undo rollback
+                setPileUndoRollback(prevUndo => [...prevUndo, lastAction]);
                 if (lastAction.type === 1) {
-                    // Si la dernière action était une suppression, ajouter l'intersection
                     setAdresseLivraisonsAjoutees(prev => [...prev, lastAction.intersection]);
                 } else if (lastAction.type === 0) {
-                    // Si la dernière action était un ajout, supprimer l'intersection
-                    setAdresseLivraisonsAjoutees(prev => prev.filter(intersection => intersection.id !== lastAction.intersection.id));
+                    if (lastAction.isEntrepot){
+                        setPointDeRetrait(null);
+                    }else{
+                        setAdresseLivraisonsAjoutees(prev => prev.filter(intersection => intersection.id !== lastAction.intersection.id));
+                    }
                 }
             }
             return [...prev];
         });
     };
 
+    // permet de défaire la dernière action de rollback
+    const undoDernierRollback = () => {
+        setPileUndoRollback(prev => {
+            const lastUndoAction = prev.pop();
+            if (lastUndoAction) {
+                // Ajouter l'action à la pile de rollback
+                setActionStackRollback(prevRollback => [...prevRollback, lastUndoAction]);
+                if (lastUndoAction.type === 1) {
+                    setAdresseLivraisonsAjoutees(prev => prev.filter(intersection => intersection.id !== lastUndoAction.intersection.id));
+                } else if (lastUndoAction.type === 0) {
+                    if (lastUndoAction.isEntrepot){
+                        setPointDeRetrait(lastUndoAction.intersection);
+                    }else {
+                        setAdresseLivraisonsAjoutees(prev => [...prev, lastUndoAction.intersection]);
+                    }
+                }
+            }
+            return [...prev];
+        });
+    };
+    
+    // permet de vider la liste  
+    const viderListeUndoRollback = () => {
+        setPileUndoRollback([]);
+    }
+    
     const [chargementPlanEnCours, setChargementPlanEnCours] = useState(false);
     const [chargemementCalculTournee, setChargemementCalculTournee] = useState(false);
 
@@ -157,6 +189,8 @@ export default function Accueil() {
                             toast.error(error);
                             setChargementPlanEnCours(false);
                         });
+                        setActionStackRollback([]);
+                        setPileUndoRollback([]);
                         setPlanCharge(true);
                     } else {
                         enregistrerRequetesLivraisons("CHARGEMENT", file)
@@ -183,7 +217,8 @@ export default function Accueil() {
                                     voisins: livraison.intersection.voisins
                                 }));
 
-                                console.log("adressesLivraisonsMapped", adressesLivraisonsMapped);
+                                setActionStackRollback([]);
+                                setPileUndoRollback([]);
                                 setAdressesLivraisonsXml(adressesLivraisonsMapped);
                                 toast.success(message);
                             }).catch((error) => {
@@ -321,6 +356,7 @@ export default function Accueil() {
                             <Box sx={{width: '60%'}}>
                                 <Carte
                                     ajoutActionStack={ajoutActionStack}
+                                    viderListeUndoRollback={viderListeUndoRollback}
                                     intersections={intersections}
                                     setAdresseLivraisonsAjoutees={setAdresseLivraisonsAjoutees}
                                     adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
@@ -336,7 +372,10 @@ export default function Accueil() {
                                 <ListeRequetesLivraisonAjoutManuel
                                     ajoutActionStack={ajoutActionStack}
                                     rollbackDerniereAction={rollbackDerniereAction}
+                                    undoDernierRollback={undoDernierRollback}
+                                    viderListeUndoRollback={viderListeUndoRollback}
                                     isRollbackDesactive={isRollbackDesactive}
+                                    isUndoRollbackDesactive={isUndoRollbackDesactive}
                                     adressesLivraisonsXml={adressesLivraisonsXml}
                                     adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
                                     setAdresseLivraisonsXml={setAdressesLivraisonsXml}

@@ -5,11 +5,15 @@ import {Box, Button} from "@mui/material";
 import { DataGrid, GridActionsCellItem, GridColDef } from "@mui/x-data-grid";
 import {Action} from "../Utils/types";
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 
 interface ListeRequetesLivraisonAjoutManuelProps {
     ajoutActionStack: (action: Action) => void;
     rollbackDerniereAction: () => void;
+    undoDernierRollback: () => void;
+    viderListeUndoRollback: () => void;
     isRollbackDesactive: boolean;
+    isUndoRollbackDesactive: boolean;
     adressesLivraisonsXml: Intersection[];
     adressesLivraisonsAjoutees: Intersection[];
     setAdresseLivraisonsXml: (adressesLivraisons: Intersection[]) => void;
@@ -22,7 +26,10 @@ interface ListeRequetesLivraisonAjoutManuelProps {
 export default function ListeRequetesLivraisonAjoutManuel({
                                                               ajoutActionStack,
                                                               rollbackDerniereAction,
+                                                              undoDernierRollback,
+                                                              viderListeUndoRollback,
                                                               isRollbackDesactive,
+                                                              isUndoRollbackDesactive,
                                                               adressesLivraisonsXml,
                                                               setAdresseLivraisonsXml,
                                                               adressesLivraisonsAjoutees,
@@ -49,7 +56,11 @@ export default function ListeRequetesLivraisonAjoutManuel({
             const newAdressesLivraisons = adressesLivraisonsAjoutees.filter((livraison) => livraison.id !== id);
             setAdresseLivraisonsAjoutees(newAdressesLivraisons);
         }
-        ajoutActionStack({ type: 1, intersection: { ...livraisonASupprimer } });
+        
+        // vider la liste undo rollback car une action a été effectuée
+        viderListeUndoRollback();
+        ajoutActionStack({ type: 1, intersection: { ...livraisonASupprimer }, isEntrepot: false });
+        
     };
 
     const gererClicLigne = (params) => {
@@ -113,6 +124,12 @@ export default function ListeRequetesLivraisonAjoutManuel({
                     disabled={isRollbackDesactive}
                     sx={{ marginBottom: 1 }}
                     startIcon={<ArrowBackRoundedIcon sx={{ color: isRollbackDesactive ? 'grey' : 'black' }} />}
+                />
+                <Button
+                    onClick={() => undoDernierRollback()}
+                    disabled={isUndoRollbackDesactive}
+                    sx={{ marginBottom: 1 }}
+                    startIcon={<ArrowForwardRoundedIcon sx={{ color:  isUndoRollbackDesactive ? 'grey' : 'black' }} />}
                 />
             </Box>
             <Box sx={{ height: 'auto', maxHeight: 400, width: '100%' }}> {/* Max height for 6 rows */}
