@@ -25,6 +25,7 @@ import {calculerItineraire} from "../Appels_api/calculerItineraire.ts";
 import {styled} from "@mui/material/styles";
 import ItineraireManager from "./GestionnaireItineraire.tsx";
 import {Action} from "../Utils/types";
+import {definirAdressesSelonVoisins} from "../Utils/utils.ts";
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -139,34 +140,7 @@ export default function Accueil() {
         }
         setDialogRequetesLivraisonOuvert(false);
     };
-
-        
-
-
-    const definirAdressesSelonVoisins = (point: any) => {
-        let adresse;
-        if (point.voisins.length >= 2) {
-            const firstNonEmpty = point.voisins[0].nomRue !== '' ? point.voisins[0].nomRue : null;
-            const secondNonEmpty = point.voisins[1].nomRue !== '' ? point.voisins[1].nomRue : null;
-            if (firstNonEmpty && secondNonEmpty) {
-                adresse = `${firstNonEmpty} - ${secondNonEmpty}`;
-            } else if (firstNonEmpty) {
-                adresse = firstNonEmpty;
-            } else if (secondNonEmpty) {
-                adresse = secondNonEmpty;
-            } else {
-                // Si les deux noms de rues sont vides on prend le premier voisin non vide après
-                const nonEmptyVoisin = point.voisins.find((voisin: any) => voisin.nomRue !== '');
-                adresse = nonEmptyVoisin ? nonEmptyVoisin.nomRue : 'pas définie';
-            }
-        } else if (point.voisins.length === 1) {
-            adresse = point.voisins[0].nomRue !== '' ? point.voisins[0].nomRue : 'pas définie';
-        } else {
-            adresse = 'pas définie';
-        }
-        return adresse;
-    };
-
+    
     const chargerPoints = (donnees: Blob) => {
         try {
             setIsTourneeCalculee(false);
@@ -299,6 +273,8 @@ export default function Accueil() {
                 intersection: livraison
             }))
         };
+        
+        console.log("livraisons", livraisons);
 
         try {
             setChargemementCalculTournee(true);
@@ -379,15 +355,15 @@ export default function Accueil() {
                 {erreurMessage && <p className="error-message">{erreurMessage}</p>}
 
                 {chargementPlanEnCours ? (
-                    <Box sx={{display: 'flex', flexDirection: 'row', gap: '2dvw'}}>
+                    <Box sx={{display: 'flex', flexDirection: 'row', gap: '2dvw', height:'60%'}}>
                         <Box sx={{width: '100%', height: '400px', display: 'flex', justifyContent: 'center', alignItems:'center'}}>
                             <CircularProgress />
                         </Box>
                     </Box>
                 ) : (
                     points.length > 0 && (
-                        <Box sx={{display: 'flex', flexDirection: 'row', gap: '2dvw'}}>
-                            <Box sx={{width: '60%'}}>
+                        <Box className="carte-liste-container" sx={{ display: 'flex', flexDirection: 'row', gap: '2dvw', height: '60%' , minHeight:'500px'}}>
+                            <Box sx={{ width: isTourneeCalculee ? '100%' : '60%', height: '100%' }}>
                                 <Carte
                                     ajoutActionStack={ajoutActionStack}
                                     viderListeUndoRollback={viderListeUndoRollback}
@@ -403,6 +379,7 @@ export default function Accueil() {
                                 />
                             </Box>
 
+                            {!isTourneeCalculee && (
                             <Box sx={{width: '40%', overflowY: 'auto'}}>
                                 <ListeRequetesLivraisonAjoutManuel
                                     ajoutActionStack={ajoutActionStack}
@@ -418,8 +395,10 @@ export default function Accueil() {
                                     pointDeRetrait={pointDeRetrait}
                                     setPointDeRetrait={setPointDeRetrait}
                                     zoomerVersPoint={zoomToPointRef.current}
+                                    suppressionIndisponible={isTourneeCalculee}
                                 />
-                            </Box>
+                            </Box>)}
+
                         </Box>
                     ))}
 

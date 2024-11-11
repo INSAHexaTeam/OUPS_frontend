@@ -97,12 +97,6 @@ const Carte: React.FC<CarteProps> = ({
     const refCarte = useRef<L.Map>(null); // Reference to the map
 
     const minNiveauZoomForIntersections = 16;
-
-    console.log("Props reçues dans Carte:", {
-        nombreItineraires: itineraires.length,
-        itineraireSelectionne: itineraireSelectionne
-    });
-
     const ajouterBouton = (id: number, longitude: number, latitude: number, adresse: string) => {
         const adresseExiste = adressesLivraisonsAjoutees.some((livraison) => livraison.id === id);
         if (!adresseExiste) {
@@ -198,18 +192,13 @@ const Carte: React.FC<CarteProps> = ({
         console.log("État de l'itinéraire sélectionné:", itineraireSelectionne);
         if (itineraireSelectionne !== undefined) {
             const itineraire = itineraires[itineraireSelectionne];
-            console.log(`Itinéraire ${itineraireSelectionne + 1} sélectionné:`, {
-                nombreLivraisons: itineraire.livraisons.livraisons.length,
-                cheminIntersections: itineraire.cheminIntersections.length,
-                details: itineraire
-            });
         } else {
             console.log("Aucun itinéraire sélectionné");
         }
     }, [itineraireSelectionne, itineraires]);
 
     return (
-        <MapContainer center={[45.75, 4.85]} zoom={niveauZoom} style={{height: '400px', width: '100%'}} ref={refCarte}>
+        <MapContainer center={[45.75, 4.85]} zoom={niveauZoom} style={{height: '100%', width: '100%'}} ref={refCarte}>
             <MapEvents/>
             <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
