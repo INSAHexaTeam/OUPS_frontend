@@ -6,6 +6,7 @@ import { Button } from '@mui/material';
 import { Point, Intersection } from '../Utils/points';
 import 'leaflet/dist/leaflet.css';
 import {Action} from "../Utils/types";
+import MapTaille from './MapTaille.tsx';
 
 interface CarteProps {
     ajoutActionStack: (action: Action) => void;
@@ -88,7 +89,8 @@ const Carte: React.FC<CarteProps> = ({
                                          setAdresseEntrepot,
                                          zoomerVersPoint,
                                          itineraires,
-                                         itineraireSelectionne
+                                         itineraireSelectionne,
+                                         isTourneeCalculee
                                      }) => {
     const [niveauZoom, setNiveauZoom] = useState<number>(13);
     const [convexHull, setConvexHull] = useState<any>(null);
@@ -116,6 +118,7 @@ const Carte: React.FC<CarteProps> = ({
             }
         }
     };
+
 
     const MapEvents = () => {
         useMapEvents({
@@ -199,6 +202,7 @@ const Carte: React.FC<CarteProps> = ({
 
     return (
         <MapContainer center={[45.75, 4.85]} zoom={niveauZoom} style={{height: '100%', width: '100%'}} ref={refCarte}>
+            <MapTaille isTourneeCalculee={isTourneeCalculee}/>
             <MapEvents/>
             <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

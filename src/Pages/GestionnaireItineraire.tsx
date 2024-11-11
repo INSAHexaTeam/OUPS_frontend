@@ -19,13 +19,14 @@ import {
     InputLabel
 } from '@mui/material';
 import {
-    DragHandle as DragHandleIcon,
     Delete as DeleteIcon,
     ExpandMore as ExpandMoreIcon,
     Undo as UndoIcon,
-    Redo as RedoIcon
+    Redo as RedoIcon,
+    SwapHoriz as SwapHorizIcon
 } from '@mui/icons-material';
-import { DragDropContext, Droppable, Draggable, DroppableProvided, DraggableProvided } from 'react-beautiful-dnd';
+import { calculerItineraireOrdonne } from '../Appels_api/calculerItineraireOrdonne.ts';
+import { ItineraireOrdonne } from '../Utils/points.tsx';
 
 interface PointLivraison {
     intersection: {
@@ -100,33 +101,16 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
         }
     }, [itineraires]);
 
-    const gererFinGlisserDeposer = (resultat: any) => {
-        if (!resultat.destination) return;
-
-        const { source, destination } = resultat;
+    const deplacerLivraison = (livraison: PointLivraison, indexSourceCoursier: number, indexDestinationCoursier: number) => {
         const nouveauxItineraires = [...itineraires];
 
-        // Si le déplacement est dans le même itinéraire
-        if (source.droppableId === destination.droppableId) {
-            const itineraireIndex = parseInt(source.droppableId);
-            const livraisons = [...nouveauxItineraires[itineraireIndex].livraisons.livraisons];
-            const [removed] = livraisons.splice(source.index, 1);
-            livraisons.splice(destination.index, 0, removed);
-            nouveauxItineraires[itineraireIndex].livraisons.livraisons = livraisons;
-        } else {
-            // Si le déplacement est entre différents itinéraires
-            const sourceItineraireIndex = parseInt(source.droppableId);
-            const destItineraireIndex = parseInt(destination.droppableId);
+        // Retirer la livraison de son itinéraire actuel
+        const sourceLivraisons = nouveauxItineraires[indexSourceCoursier].livraisons.livraisons;
+        const livraisonIndex = sourceLivraisons.findIndex(l => l.intersection.id === livraison.intersection.id);
+        sourceLivraisons.splice(livraisonIndex, 1);
 
-            const sourceLivraisons = [...nouveauxItineraires[sourceItineraireIndex].livraisons.livraisons];
-            const destLivraisons = [...nouveauxItineraires[destItineraireIndex].livraisons.livraisons];
-
-            const [removed] = sourceLivraisons.splice(source.index, 1);
-            destLivraisons.splice(destination.index, 0, removed);
-
-            nouveauxItineraires[sourceItineraireIndex].livraisons.livraisons = sourceLivraisons;
-            nouveauxItineraires[destItineraireIndex].livraisons.livraisons = destLivraisons;
-        }
+        // Ajouter la livraison au nouvel itinéraire
+        nouveauxItineraires[indexDestinationCoursier].livraisons.livraisons.push(livraison);
 
         mettreAJourItineraires(nouveauxItineraires);
     };
@@ -201,6 +185,46 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
 
     const appelerAPI = () => {
         console.log("Appel API effectué avec les itinéraires mis à jour");
+        
+        const itinerairesOrdonnes = {
+            livraisons: itineraires.map(itineraire => ({
+                cheminIntersections: itineraire.cheminIntersections || [],
+                livraisons: {
+                    entrepot: {
+                        heureDepart: "08:00:00",
+                        intersection: itineraire.livraisons.entrepot.intersection
+                    },
+                    livraisons: [
+                        {
+                            intersection: itineraire.livraisons.entrepot.intersection,
+                            estUneLivraison: false
+                        },
+                        ...itineraire.livraisons.livraisons.map(livraison => ({
+                            intersection: livraison.intersection,
+                            estUneLivraison: false
+                        }))
+                    ],
+                    coursier: null
+                }
+            }))
+        };
+
+        console.log(itinerairesOrdonnes);
+        calculerItineraireOrdonne(itinerairesOrdonnes)
+            .then(response => {
+                const itineraires: Itineraire[] = response.data.livraisons.map((itineraire: any) => ({
+                    livraisons: {
+                        entrepot: itineraire.livraisons.entrepot,
+                        livraisons: itineraire.livraisons.livraisons,
+                        coursier: itineraire.livraisons.coursier
+                    },
+                    cheminIntersections: itineraire.cheminIntersections
+                }));
+                mettreAJourItineraires(itineraires);
+            })
+            .catch(error => {
+                console.error("Erreur lors du calcul de l'itinéraire :", error);
+            });
         setEstModifie(false);
     };
 
@@ -251,115 +275,115 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                 </Button>
             </Box>
 
-            <DragDropContext onDragEnd={gererFinGlisserDeposer}>
-                <Box sx={{
-                    display: 'flex',
-                    gap: 2,
-                    overflowX: 'auto',
-                    pb: 2 // padding bottom pour la scrollbar
-                }}>
-                    {itineraires.map((itineraire, index) => (
-                        <Card key={index} sx={{
-                            minWidth: 300,
-                            maxWidth: 350,
-                            backgroundColor: 'background.default'
-                        }}>
-                            <CardContent 
-                                onClick={() => gererSelectionItineraire(index)}
-                                sx={{
-                                    cursor: 'pointer',
-                                    backgroundColor: itineraireSelectionne === index ? 'action.selected' : 'background.default',
-                                    '&:hover': {
-                                        backgroundColor: 'action.hover'
-                                    }
-                                }}
-                            >
-                                <Typography color="primary" variant="h6" gutterBottom>
-                                    Coursier {index + 1}
-                                </Typography>
-                                <Typography color="text.secondary" gutterBottom>
-                                    {itineraire.livraisons.livraisons.length} livraisons
-                                </Typography>
+            <Box sx={{
+                display: 'flex',
+                gap: 2,
+                overflowX: 'auto',
+                pb: 2
+            }}>
+                {itineraires.map((itineraire, indexCoursier) => (
+                    <Card key={indexCoursier} sx={{
+                        minWidth: 300,
+                        maxWidth: 350,
+                        backgroundColor: 'background.default'
+                    }}>
+                        <CardContent 
+                            onClick={() => gererSelectionItineraire(indexCoursier)}
+                            sx={{
+                                cursor: 'pointer',
+                                backgroundColor: itineraireSelectionne === indexCoursier ? 'action.selected' : 'background.default',
+                                '&:hover': {
+                                    backgroundColor: 'action.hover'
+                                }
+                            }}
+                        >
+                            <Typography color="primary" variant="h6" gutterBottom>
+                                Coursier {indexCoursier + 1}
+                            </Typography>
+                            <Typography color="text.secondary" gutterBottom>
+                                {itineraire.livraisons.livraisons.length} livraisons
+                            </Typography>
 
-                                <Droppable droppableId={index.toString()}>
-                                    {(provided: DroppableProvided) => (
-                                        <List
-                                            ref={provided.innerRef}
-                                            {...provided.droppableProps}
-                                            sx={{
-                                                bgcolor: 'background.paper',
-                                                borderRadius: 1,
-                                                minHeight: 400, // hauteur minimale pour faciliter le drag & drop
-                                                maxHeight: 'calc(100vh - 250px)', // hauteur maximum avec scroll
-                                                overflowY: 'auto'
-                                            }}
-                                        >
-                                            {itineraire.livraisons.livraisons.map((livraison, livraisonIndex) => (
-                                                <Draggable
-                                                    key={livraison.intersection.id.toString()}
-                                                    draggableId={livraison.intersection.id.toString()}
-                                                    index={livraisonIndex}
-                                                >
-                                                    {(provided: DraggableProvided) => (
-                                                        <ListItem
-                                                            ref={provided.innerRef}
-                                                            {...provided.draggableProps}
-                                                            {...provided.dragHandleProps}
-                                                            sx={{
-                                                                my: 1,
-                                                                border: 1,
-                                                                borderColor: 'divider',
-                                                                borderRadius: 1,
-                                                                bgcolor: 'white'
-                                                            }}
-                                                        >
-                                                            <Box sx={{
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                width: '100%'
-                                                            }}>
-                                                                <DragHandleIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                                                                <Box sx={{ flexGrow: 1 }}>
-                                                                    <Typography variant="body1">
-                                                                        Livraison {livraisonIndex + 1}
-                                                                    </Typography>
-                                                                    <Typography variant="body2" color="text.secondary">
-                                                                        ID: {livraison.intersection.id}
-                                                                    </Typography>
-                                                                    {livraison.intersection.adresse && (
-                                                                        <Typography
-                                                                            variant="body2"
-                                                                            color="text.secondary"
-                                                                            sx={{
-                                                                                whiteSpace: 'nowrap',
-                                                                                overflow: 'hidden',
-                                                                                textOverflow: 'ellipsis'
-                                                                            }}
-                                                                        >
-                                                                            {livraison.intersection.adresse}
-                                                                        </Typography>
-                                                                    )}
-                                                                </Box>
-                                                                <IconButton
-                                                                    size="small"
-                                                                    onClick={() => supprimerLivraison(livraison, index)}
-                                                                >
-                                                                    <DeleteIcon />
-                                                                </IconButton>
-                                                            </Box>
-                                                        </ListItem>
+                            <List sx={{
+                                bgcolor: 'background.paper',
+                                borderRadius: 1,
+                                minHeight: 400,
+                                maxHeight: 'calc(100vh - 250px)',
+                                overflowY: 'auto'
+                            }}>
+                                {itineraire.livraisons.livraisons.map((livraison, livraisonIndex) => (
+                                    <ListItem
+                                        key={livraison.intersection.id}
+                                        sx={{
+                                            my: 1,
+                                            border: 1,
+                                            borderColor: 'divider',
+                                            borderRadius: 1,
+                                            bgcolor: 'white'
+                                        }}
+                                    >
+                                        <Box sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            width: '100%'
+                                        }}>
+                                            <Box sx={{ flexGrow: 1 }}>
+                                                <Typography variant="body1">
+                                                    Livraison {livraisonIndex + 1}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    ID: {livraison.intersection.id}
+                                                </Typography>
+                                                {livraison.intersection.adresse && (
+                                                    <Typography
+                                                        variant="body2"
+                                                        color="text.secondary"
+                                                        sx={{
+                                                            whiteSpace: 'nowrap',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis'
+                                                        }}
+                                                    >
+                                                        {livraison.intersection.adresse}
+                                                    </Typography>
+                                                )}
+                                            </Box>
+                                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                                <Select
+                                                    size="small"
+                                                    value={indexCoursier}
+                                                    onChange={(e) => deplacerLivraison(
+                                                        livraison,
+                                                        indexCoursier,
+                                                        e.target.value as number
                                                     )}
-                                                </Draggable>
-                                            ))}
-                                            {provided.placeholder}
-                                        </List>
-                                    )}
-                                </Droppable>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </Box>
-            </DragDropContext>
+                                                    sx={{ minWidth: 120 }}
+                                                >
+                                                    {itineraires.map((_, index) => (
+                                                        <MenuItem 
+                                                            key={index} 
+                                                            value={index}
+                                                            disabled={index === indexCoursier}
+                                                        >
+                                                            Coursier {index + 1}
+                                                        </MenuItem>
+                                                    ))}
+                                                </Select>
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => supprimerLivraison(livraison, indexCoursier)}
+                                                >
+                                                    <DeleteIcon />
+                                                </IconButton>
+                                            </Box>
+                                        </Box>
+                                    </ListItem>
+                                ))}
+                            </List>
+                        </CardContent>
+                    </Card>
+                ))}
+            </Box>
 
             <Dialog open={dialogueOuvert} onClose={() => setDialogueOuvert(false)}>
                 <DialogTitle>Modifier la livraison</DialogTitle>

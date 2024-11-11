@@ -72,7 +72,7 @@ export default function Accueil() {
         setIsRollbackDesactive(actionStackRollback.length === 0);
         setIsUndoRollbackDesactive(pileUndoRollback.length === 0);
     }, [actionStackRollback, pileUndoRollback]);
-    
+
     // permet de défaire la dernière action
     const rollbackDerniereAction = () => {
         setActionStackRollback(prev => {
@@ -376,6 +376,7 @@ export default function Accueil() {
                                     zoomerVersPoint={(fn) => { zoomToPointRef.current = fn; }}
                                     itineraires={itineraires}
                                     itineraireSelectionne={itineraireSelectionne}
+                                    isTourneeCalculee={isTourneeCalculee}
                                 />
                             </Box>
 
