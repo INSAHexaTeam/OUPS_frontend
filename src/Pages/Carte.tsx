@@ -261,7 +261,7 @@ const Carte: React.FC<CarteProps> = ({
                 <Marker key={intersection.id} position={[intersection.latitude, intersection.longitude]}
                         icon={marqueurIntersections}>
                     <Popup>
-                        <span>{isTourneeCalculee && livraisonAjouteePourCoursier ? 'Ajouter une livraison pour le coursier ' + livraisonAjouteePourCoursier.numeroCoursier : 'Ajouter une livraison'}</span>
+                        <span>{isTourneeCalculee && livraisonAjouteePourCoursier ? `Ajouter une livraison pour le coursier ${livraisonAjouteePourCoursier.numeroCoursier + 1}` : `Ajouter une livraison`}</span>
                         <br/>
                         <span><b>{`Adresse : ${intersection.adresse}`}</b><br/></span>
                         <Button 
