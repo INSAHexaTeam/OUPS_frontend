@@ -440,6 +440,7 @@ export default function Accueil() {
                         onChangementItineraires={gereLesChangeementsdItineraire}
                         itineraireSelectionne={itineraireSelectionne}
                         onSelectionItineraire={setItineraireSelectionne}
+                        isTourneeCalculee={isTourneeCalculee}
                     />
                 )}
             </Box>
