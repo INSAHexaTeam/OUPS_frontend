@@ -117,6 +117,7 @@ const Carte: React.FC<CarteProps> = ({
                     repeat: 100,
                     symbol: L.Symbol.arrowHead({
                         pixelSize: 15,
+                        polygon: false,
                         pathOptions: {
                             stroke: true,
                             color: '#000000',
