@@ -94,6 +94,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     const [estModifie, setEstModifie] = useState(false);
     const [retourEnCours, setRetourEnCours] = useState(false);
     const [historiqueAnnule, setHistoriqueAnnule] = useState<Itineraire[][]>([]);
+    const couleursItineraires = ['#FF0000', '#0000FF', '#808080', '#DE2AEE', '#008000'];
 
 
     //l'objet itinéraire est une liste de livraisons par coursier : itinéraire = [livraisonPourCoursier1, livraisonPourCoursier2, ...]
@@ -419,7 +420,10 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                     <Card key={indexCoursier} sx={{
                         minWidth: 300,
                         maxWidth: 350,
-                        backgroundColor: 'background.default'
+                        backgroundColor: 'background.default',
+                        border: 3,
+                        borderColor: couleursItineraires[indexCoursier % couleursItineraires.length],
+                        borderRadius: 2
                     }}>
                         <CardContent 
                             onClick={() => gererSelectionItineraire(indexCoursier)}
@@ -431,7 +435,12 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                                 }
                             }}
                         >
-                            <Typography color="primary" variant="h6" gutterBottom>
+                            <Typography 
+                                color={couleursItineraires[indexCoursier % couleursItineraires.length]} 
+                                variant="h6" 
+                                gutterBottom 
+                                fontWeight="bold"
+                            >
                                 Coursier {indexCoursier + 1}
                             </Typography>
                             <Typography color="text.secondary" gutterBottom>
