@@ -1,20 +1,32 @@
-import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
+import React, {useState, useEffect, ChangeEvent, useRef} from 'react';
 import '../Styles/Accueil.css';
 import Carte from './Carte.tsx';
-import { Intersection, Point } from '../Utils/points.tsx';
-import { Box, Button, CircularProgress, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
+import {Intersection, Itineraire, Point} from '../Utils/points.tsx';
+import {
+    Box,
+    Button,
+    CircularProgress,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    Dialog,
+    DialogTitle, DialogContentText, DialogContent, DialogActions
+} from "@mui/material";
 import toast, { Toaster } from "react-hot-toast";
 import ListeRequetesLivraisonAjoutManuel from "./ListeRequetesLivraisonAjoutManuel.tsx";
 import MailIcon from '@mui/icons-material/Mail';
 import MapIcon from '@mui/icons-material/Map';
-import {Livraisons } from '../Utils/points.tsx';
+import { Livraisons } from '../Utils/points.tsx';
 import { enregistrerCarte } from "../Appels_api/enregistrerCarte.ts";
 import { enregistrerRequetesLivraisons } from "../Appels_api/enregistrerRequetesLivraisons.ts";
 import '../Styles/Accueil.css';
 import {calculerItineraire} from "../Appels_api/calculerItineraire.ts";
 import {styled} from "@mui/material/styles";
 import { useNavigate } from 'react-router-dom';
-
+import ItineraireManager from "./GestionnaireItineraire.tsx";
+import {Action} from "../Utils/types";
+import {definirAdressesSelonVoisins} from "../Utils/utils.ts";
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -28,6 +40,8 @@ const VisuallyHiddenInput = styled('input')({
     width: 1,
 });
 
+const actionStackRollback: Action[] = [];
+
 export default function Accueil() {
     const [message, setMessage] = useState<string | null>(null);
     const [erreurMessage, setErreurMessage] = useState<string | null>(null);
@@ -38,18 +52,101 @@ export default function Accueil() {
     const [listesTotalAdressesLivraisons, setListesTotalAdressesLivraisons] = useState<Intersection[]>([]);
     const [pointDeRetrait, setPointDeRetrait] = useState<Intersection | null>(null);
     const [planCharge, setPlanCharge] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [numCouriers, setNumCouriers] = useState(1); // New state for number of couriers
+    const [numCouriers, setNumCouriers] = useState(1);
     const zoomToPointRef = useRef<(latitude: number, longitude: number) => void>(() => {});
     const [itineraires, setItineraires] = useState<any[]>([]);
     const [isTourneeCalculee, setIsTourneeCalculee] = useState(false);
+<<<<<<< HEAD
     const [donneesTournee, setDonneesTournee] = useState([]);
     const navigation = useNavigate();
+=======
+    const [actionStackRollback, setActionStackRollback] = useState<Action[]>([]);
+    const [pileUndoRollback, setPileUndoRollback] = useState<Action[]>([]);
+    const [isRollbackDesactive, setIsRollbackDesactive] = useState(true);
+    const [isUndoRollbackDesactive, setIsUndoRollbackDesactive] = useState(true);
+    const [fichierSelectionne, setFichierSelectionne] = useState<File | null>(null);
+    
+    const [dialogRequetesLivraisonOuvert, setDialogRequetesLivraisonOuvert] = useState(false);
+    
+    // permet d'ajouter une action à la pile
+    const ajoutActionStack = (action: Action) => {
+        setActionStackRollback(prev => [...prev, action]);
+    };
+
+    useEffect(() => {
+        setIsRollbackDesactive(actionStackRollback.length === 0);
+        setIsUndoRollbackDesactive(pileUndoRollback.length === 0);
+    }, [actionStackRollback, pileUndoRollback]);
+
+    // permet de défaire la dernière action
+    const rollbackDerniereAction = () => {
+        setActionStackRollback(prev => {
+            const lastAction = prev.pop();
+            if (lastAction) {
+                // Ajouter l'action à la pile de undo rollback
+                setPileUndoRollback(prevUndo => [...prevUndo, lastAction]);
+                if (lastAction.type === 1) {
+                    setAdresseLivraisonsAjoutees(prev => [...prev, lastAction.intersection]);
+                } else if (lastAction.type === 0) {
+                    if (lastAction.isEntrepot){
+                        setPointDeRetrait(null);
+                    }else{
+                        setAdresseLivraisonsAjoutees(prev => prev.filter(intersection => intersection.id !== lastAction.intersection.id));
+                    }
+                }
+            }
+            return [...prev];
+        });
+    };
+
+    // permet de défaire la dernière action de rollback
+    const undoDernierRollback = () => {
+        setPileUndoRollback(prev => {
+            const lastUndoAction = prev.pop();
+            if (lastUndoAction) {
+                // Ajouter l'action à la pile de rollback
+                setActionStackRollback(prevRollback => [...prevRollback, lastUndoAction]);
+                if (lastUndoAction.type === 1) {
+                    setAdresseLivraisonsAjoutees(prev => prev.filter(intersection => intersection.id !== lastUndoAction.intersection.id));
+                } else if (lastUndoAction.type === 0) {
+                    if (lastUndoAction.isEntrepot){
+                        setPointDeRetrait(lastUndoAction.intersection);
+                    }else {
+                        setAdresseLivraisonsAjoutees(prev => [...prev, lastUndoAction.intersection]);
+                    }
+                }
+            }
+            return [...prev];
+        });
+    };
+    
+    // permet de vider la liste  
+    const viderListeUndoRollback = () => {
+        setPileUndoRollback([]);
+    }
+    
+    const [chargementPlanEnCours, setChargementPlanEnCours] = useState(false);
+    const [chargemementCalculTournee, setChargemementCalculTournee] = useState(false);
+
+    const [itineraireSelectionne, setItineraireSelectionne] = useState<number | undefined>(undefined);
+>>>>>>> origin/main
 
     useEffect(() => {
         setListesTotalAdressesLivraisons([...adressesLivraisonsAjoutees, ...adressesLivraisonsXml]);
     }, [adressesLivraisonsAjoutees, adressesLivraisonsXml]);
 
+    const gereLesChangeementsdItineraire = (newItineraires: Itineraire[]) => {
+        setItineraires(newItineraires);
+        // Appeler votre API ou mettre à jour la carte ici
+    };
+
+    const garderRequetesLivraisons = () => {
+        if (fichierSelectionne) {
+            chargerRequetesLivraisons(fichierSelectionne);
+        }
+        setDialogRequetesLivraisonOuvert(false);
+    };
+    
     const chargerPoints = (donnees: Blob) => {
         try {
             setIsTourneeCalculee(false);
@@ -57,7 +154,7 @@ export default function Accueil() {
                 id: point.id,
                 latitude: point.latitude,
                 longitude: point.longitude,
-                adresse: point.voisins.length > 0 ? point.voisins[0].nomRue : 'pas définie',
+                adresse: definirAdressesSelonVoisins(point),
                 voisins: point.voisins.map((voisin: any) => ({
                     nomRue: voisin.nomRue,
                     longueur: voisin.longueur,
@@ -77,55 +174,67 @@ export default function Accueil() {
         }
     };
 
+    const chargerRequetesLivraisons = (file: File) => {
+        enregistrerRequetesLivraisons("CHARGEMENT", file)
+            .then((response) => {
+                const {message, data} = response;
+                const entrepot = data.entrepot;
+                const listeLivraisons = data.livraisons;
+
+                const pointDeRetrait = {
+                    id: entrepot.intersection.id,
+                    latitude: entrepot.intersection.latitude,
+                    longitude: entrepot.intersection.longitude,
+                    adresse: definirAdressesSelonVoisins(entrepot.intersection),
+                    voisins: entrepot.intersection?.voisins
+                };
+                setPointDeRetrait(pointDeRetrait);
+
+                const adressesLivraisonsMapped = listeLivraisons.map((livraison: any) => ({
+                    id: livraison.intersection.id,
+                    latitude: livraison.intersection.latitude,
+                    longitude: livraison.intersection.longitude,
+                    adresse: definirAdressesSelonVoisins(livraison.intersection),
+                    voisins: livraison.intersection.voisins
+                }));
+
+                setActionStackRollback([]);
+                setPileUndoRollback([]);
+                setAdressesLivraisonsXml(adressesLivraisonsMapped);
+                toast.success(message);
+            }).catch((error) => {
+            toast.error(error);
+        });
+    }; 
+    
     const gererLectureFichier = (file: File, isCarte: boolean = false) => {
         setIsTourneeCalculee(false);
         if (file && file.type === 'text/xml') {
             const reader = new FileReader();
             reader.onload = (e: ProgressEvent<FileReader>) => {
                 if (e.target && typeof e.target.result === 'string') {
-                    
+
                     if (isCarte) {
-                        setLoading(true);
+                        setChargementPlanEnCours(true);
                         enregistrerCarte("CHARGEMENT", file)
                             .then((response) => {
                                 const { message, data } = response;
                                 chargerPoints(data);
                                 toast.success(message);
-                                setLoading(false);
+                                setChargementPlanEnCours(false);
                             }).catch((error) => {
                             toast.error(error);
-                            setLoading(false);
+                            setChargementPlanEnCours(false);
                         });
+                        setActionStackRollback([]);
+                        setPileUndoRollback([]);
                         setPlanCharge(true);
                     } else {
-                        enregistrerRequetesLivraisons("CHARGEMENT", file)
-                            .then((response) => {
-                                const { message, data } = response;
-                                const entrepot = data.entrepot;
-                                const listeLivraisons = data.livraisons;
-
-                                const pointDeRetrait = {
-                                    id: entrepot.intersection.id,
-                                    latitude: entrepot.intersection.latitude,
-                                    longitude: entrepot.intersection.longitude,
-                                    adresse: entrepot.intersection?.voisins.length > 0 ? entrepot.intersection?.voisins[0].nomRue : 'pas définie',
-                                    voisins: entrepot.intersection?.voisins
-                                };
-                                setPointDeRetrait(pointDeRetrait);
-
-                                const adressesLivraisonsMapped = listeLivraisons.map((livraison: any) => ({
-                                    id: livraison.intersection.id,
-                                    latitude: livraison.intersection.latitude,
-                                    longitude: livraison.intersection.longitude,
-                                    adresse: livraison.intersection.voisins.length > 0  && livraison.intersection.voisins[0].nomRue? livraison.intersection.voisins[0].nomRue : 'Adresse inconnue',
-                                    voisins: livraison.intersection.voisins
-                                }));
-                                
-                                setAdressesLivraisonsXml(adressesLivraisonsMapped);
-                                toast.success(message);
-                            }).catch((error) => {
-                            toast.error(error);
-                        });
+                        if(adressesLivraisonsAjoutees.length > 0){
+                            setDialogRequetesLivraisonOuvert(true);
+                        }else {
+                            chargerRequetesLivraisons(file);
+                        }
                     }
                     setMessage(null);
                     setErreurMessage(null);
@@ -133,7 +242,7 @@ export default function Accueil() {
             };
             reader.onerror = () => {
                 setErreurMessage('Erreur de lecture du fichier');
-                setLoading(false);
+                setChargementPlanEnCours(false);
             };
             reader.readAsText(file);
         } else {
@@ -142,16 +251,10 @@ export default function Accueil() {
     };
 
     const gererSelectionFichier = (event: ChangeEvent<HTMLInputElement>, isCarte: boolean = false) => {
-        
-        // On supprime les anciennes livraisons si on charge une nouvelle carte
-        if(isCarte){
-            setAdressesLivraisonsXml([]);
-            setAdresseLivraisonsAjoutees([]);
-        }
-        
         setPointDeRetrait(null);
         const file = event.target.files?.[0];
         if (file) {
+            setFichierSelectionne(file);
             gererLectureFichier(file, isCarte);
         }
     };
@@ -176,9 +279,13 @@ export default function Accueil() {
                 intersection: livraison
             }))
         };
+        
+        console.log("livraisons", livraisons);
 
         try {
+            setChargemementCalculTournee(true);
             const result = await calculerItineraire(livraisons);
+<<<<<<< HEAD
             console.log("HERE2",result);
             console.log("Liste des adresses de livraison ajoutées à la main : ", livraisons);
             setDonneesTournee(result.data.livraisons);
@@ -187,13 +294,27 @@ export default function Accueil() {
             setIsTourneeCalculee(true);
             console.log("HERE",result.data.livraisons);
 
+=======
+
+            const itinerairesFomrmated = result.data.livraisons.map((itineraire, coursierIndex) => {
+                itineraire.livraisons.coursier = coursierIndex;
+                console.log("itineraire", itineraire);
+                return itineraire;
+            });
+            setItineraires(itinerairesFomrmated);
+            setIsTourneeCalculee(true);
+            setChargemementCalculTournee(false);
+            toast.success("Tournée calculée avec succès");
+>>>>>>> origin/main
         } catch (error) {
             console.error("Erreur lors du calcul de la tournée :", error);
             toast.error("Erreur lors du calcul de la tournée");
             setIsTourneeCalculee(false);
+            setChargemementCalculTournee(false);
         }
     };
 
+<<<<<<< HEAD
     const telechargerTournee = async () => {
         try {
          
@@ -206,6 +327,16 @@ export default function Accueil() {
         }
     };
 
+=======
+    function supprimerRequetesLivraisons() {
+        // on supprime les adresses rentrées par l'utilisateur
+        setAdresseLivraisonsAjoutees([]);
+        if (fichierSelectionne) {
+            chargerRequetesLivraisons(fichierSelectionne);
+        }
+        setDialogRequetesLivraisonOuvert(false);
+    }
+>>>>>>> origin/main
 
     return (
         <Box sx={{ display: "flex", flexDirection: "row", width: '100%', height: '100%', justifyContent: "center" }}>
@@ -231,13 +362,14 @@ export default function Accueil() {
                             multiple
                         />
                     </Button>
-    
+
                     {planCharge && (
                         <Button
                             component="label"
                             role={undefined}
                             variant="contained"
                             tabIndex={-1}
+                            disabled={chargementPlanEnCours}
                             startIcon={<MailIcon />}
                         >
                             Charger des livraisons
@@ -254,39 +386,54 @@ export default function Accueil() {
                 {message && <p className="success-message">{message}</p>}
                 {erreurMessage && <p className="error-message">{erreurMessage}</p>}
 
-                {loading ? (
-                        <Box sx={{display: 'flex', flexDirection: 'row', gap: '2dvw'}}>
-                            <Box sx={{width: '100%', height: '400px', display: 'flex', justifyContent: 'center', alignItems:'center'}}>
-                                <CircularProgress />
-                            </Box>
-                        </Box>
-                    ) : (
-                    points.length > 0 && (
-                    <Box sx={{display: 'flex', flexDirection: 'row', gap: '2dvw'}}>
-                        <Box sx={{width: '60%'}}>
-                            <Carte
-                                intersections={intersections}
-                                setAdresseLivraisonsAjoutees={setAdresseLivraisonsAjoutees}
-                                adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
-                                adressesLivraisonsXml={adressesLivraisonsXml}
-                                adresseEntrepot={pointDeRetrait}
-                                zoomerVersPoint={(fn) => { zoomToPointRef.current = fn; }}
-                                itineraires={itineraires}
-                            />
-                        </Box>
-
-                        <Box sx={{width: '40%', overflowY: 'auto'}}>
-                            <ListeRequetesLivraisonAjoutManuel
-                                adressesLivraisonsXml={adressesLivraisonsXml}
-                                adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
-                                setAdresseLivraisonsAjoutees={setAdresseLivraisonsAjoutees}
-                                pointDeRetrait={pointDeRetrait}
-                                setPointDeRetrait={setPointDeRetrait}
-                                zoomerVersPoint={zoomToPointRef.current}
-                            />
+                {chargementPlanEnCours ? (
+                    <Box sx={{display: 'flex', flexDirection: 'row', gap: '2dvw', height:'60%'}}>
+                        <Box sx={{width: '100%', height: '400px', display: 'flex', justifyContent: 'center', alignItems:'center'}}>
+                            <CircularProgress />
                         </Box>
                     </Box>
-                ))}
+                ) : (
+                    points.length > 0 && (
+                        <Box className="carte-liste-container" sx={{ display: 'flex', flexDirection: 'row', gap: '2dvw', height: '60%' , minHeight:'500px'}}>
+                            <Box sx={{ width: isTourneeCalculee ? '100%' : '60%', height: '100%' }}>
+                                <Carte
+                                    ajoutActionStack={ajoutActionStack}
+                                    viderListeUndoRollback={viderListeUndoRollback}
+                                    intersections={intersections}
+                                    setAdresseLivraisonsAjoutees={setAdresseLivraisonsAjoutees}
+                                    adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
+                                    adressesLivraisonsXml={adressesLivraisonsXml}
+                                    adresseEntrepot={pointDeRetrait}
+                                    setAdresseEntrepot={setPointDeRetrait}
+                                    zoomerVersPoint={(fn) => { zoomToPointRef.current = fn; }}
+                                    itineraires={itineraires}
+                                    itineraireSelectionne={itineraireSelectionne}
+                                    isTourneeCalculee={isTourneeCalculee}
+                                />
+                            </Box>
+
+                            {!isTourneeCalculee && (
+                            <Box sx={{width: '40%', overflowY: 'auto'}}>
+                                <ListeRequetesLivraisonAjoutManuel
+                                    ajoutActionStack={ajoutActionStack}
+                                    rollbackDerniereAction={rollbackDerniereAction}
+                                    undoDernierRollback={undoDernierRollback}
+                                    viderListeUndoRollback={viderListeUndoRollback}
+                                    isRollbackDesactive={isRollbackDesactive}
+                                    isUndoRollbackDesactive={isUndoRollbackDesactive}
+                                    adressesLivraisonsXml={adressesLivraisonsXml}
+                                    adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
+                                    setAdresseLivraisonsXml={setAdressesLivraisonsXml}
+                                    setAdresseLivraisonsAjoutees={setAdresseLivraisonsAjoutees}
+                                    pointDeRetrait={pointDeRetrait}
+                                    setPointDeRetrait={setPointDeRetrait}
+                                    zoomerVersPoint={zoomToPointRef.current}
+                                    suppressionIndisponible={isTourneeCalculee}
+                                />
+                            </Box>)}
+
+                        </Box>
+                    ))}
 
                 {planCharge && !isTourneeCalculee &&(
                     <span>Nombre total de requêtes de livraisons : <b>{listesTotalAdressesLivraisons.length}</b></span>
@@ -307,11 +454,19 @@ export default function Accueil() {
                                 ))}
                             </Select>
                         </FormControl>
-                        <Button variant="contained" color="primary" onClick={calculTournee}>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={calculTournee}
+                            disabled={chargemementCalculTournee}
+                            startIcon={chargemementCalculTournee ? <CircularProgress size={20} /> : null}
+                        >
                             Calculer la tournée
                         </Button>
+                        
                     </Box>
                 )}
+<<<<<<< HEAD
             {planCharge && (
             <Box className="box-buttons" sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Button variant="contained" color="primary" onClick={telechargerTournee}>
@@ -319,7 +474,37 @@ export default function Accueil() {
                 </Button>
             </Box>
         )}
+=======
+                {isTourneeCalculee && (
+                    <ItineraireManager
+                        itineraires={itineraires}
+                        onChangementItineraires={gereLesChangeementsdItineraire}
+                        itineraireSelectionne={itineraireSelectionne}
+                        onSelectionItineraire={setItineraireSelectionne}
+                    />
+                )}
+>>>>>>> origin/main
             </Box>
+
+            <Dialog onClose={() => setDialogRequetesLivraisonOuvert(false)}
+                    open={dialogRequetesLivraisonOuvert}>
+                <DialogTitle sx={{ fontWeight: 'bold' }}>
+                    {"Garder les requêtes de livraisons ? "}
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Voulez-vous garder les requêtes de livraisons que vous avez ajouter à la mains ? 
+                        L'entrepôt sera, lui, remplacé par le nouvel entrepôt.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={supprimerRequetesLivraisons} autoFocus sx={{ color: 'red' }}>
+                        Supprimer
+                    </Button>
+                    <Button onClick={garderRequetesLivraisons} sx={{ color: 'green' }}>Garder</Button>
+                </DialogActions>
+            </Dialog>
+            
         </Box>
     );
 }

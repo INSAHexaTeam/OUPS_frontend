@@ -6,7 +6,8 @@ export async function calculerItineraire(listeLivraisons : Livraisons): Promise<
     return new Promise(async (resolve, reject) => {
         try { //http://localhost:8080/carte/calculerItineraireCluster
             //http://localhost:8080/carte/calculerItineraireClusterOptimal
-            const req = await fetch(`http://localhost:8080/carte/calculerItineraireClusterOptimal  `, {
+            //"http://localhost:8080/carte/calculerItineraireClusterOptimal"
+            const req = await fetch("http://localhost:8080/carte/graph", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -18,7 +19,6 @@ export async function calculerItineraire(listeLivraisons : Livraisons): Promise<
             // Si la réponse n'est pas OK, on gère les erreurs (s'il y a des erreurs)
             if (!req.ok) {
                 const result = await req.json();
-               
                 return reject(result);  // Typiquement ici on utilise return pour quitter l'exécution
             }
 

@@ -23,10 +23,19 @@ export interface Entrepot {
 export interface Livraisons {
     entrepot: Entrepot;
     livraisons: Intersection[];
+    coursier: number;
 }
 
 export interface Itineraire {
     coursier: string;
     livraisons: Livraisons[];
     couleur?: string;
+}
+
+export interface ItineraireOrdonne {
+    livraisons: {
+        cheminIntersections: Intersection[];
+        livraisons: Livraisons[];
+    }
+    
 }
