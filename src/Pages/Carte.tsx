@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {MapContainer, TileLayer, Marker, Popup, Polygon, useMapEvents, Polyline} from 'react-leaflet';
 import L from 'leaflet';
+import 'leaflet-polylinedecorator';
 import * as turf from '@turf/turf';
 import { Button } from '@mui/material';
 import { Point, Intersection } from '../Utils/points';
@@ -98,6 +99,7 @@ const Carte: React.FC<CarteProps> = ({
     const [limitesCarte, setLimitesCarte] = useState<L.LatLngBounds | null>(null);
     const refCarte = useRef<L.Map>(null); // Reference to the map
 
+
     const minNiveauZoomForIntersections = 16;
     const ajouterBouton = (id: number, longitude: number, latitude: number, adresse: string) => {
         const adresseExiste = adressesLivraisonsAjoutees.some((livraison) => livraison.id === id);
@@ -119,6 +121,29 @@ const Carte: React.FC<CarteProps> = ({
         }
     };
 
+    const addArrowsToPolyline = (positions: L.LatLngExpression[]) => {
+        const polyline = L.polyline(positions);
+        const decorator = L.polylineDecorator(polyline, {
+            patterns: [
+                {
+                    offset: 0,
+                    repeat: 100,
+                    symbol: L.Symbol.arrowHead({
+                        pixelSize: 15,
+                        pathOptions: {
+                            stroke: true,
+                            color: '#000000',
+                            fillColor: '#ffffff',
+                            weight: 2,
+                            opacity: 1
+                        }
+                    })
+                }
+            ]
+        });
+        decorator.addTo(refCarte.current!);
+        return decorator;
+    };
 
     const MapEvents = () => {
         useMapEvents({
@@ -226,6 +251,7 @@ const Carte: React.FC<CarteProps> = ({
                     );
                 });
 
+                addArrowsToPolyline(offsetPositions);
                 // Utiliser l'opacité normale si aucun itinéraire n'est sélectionné
                 const isNormalOpacity = itineraireSelectionne === undefined;
 
