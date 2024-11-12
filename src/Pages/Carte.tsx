@@ -112,18 +112,22 @@ const Carte: React.FC<CarteProps> = ({
             offset: '10%',
             repeat: '60px',
             symbol: L.Symbol.arrowHead({
-                pixelSize: isSelected ? 20 : 15,
+                pixelSize: 15,
                 polygon: false,
                 pathOptions: {
-                    color: isSelected ? '#000000' : '#FFD700', // Couleur jaune si sélectionné
+                    color: '#000000',
                     fillOpacity: 1,
-                    weight: isSelected ? 3 : 2,
+                    weight: isSelected ? 2 : 1.5,
                     opacity: 1
                 }
             })
         };
         const decorator = L.polylineDecorator(polyline, { patterns: [arrowOptions] });
-        decorator.addTo(refCarte.current); // Ajouter le décorateur de flèches à la carte
+        
+        setTimeout(() => {
+            decorator.addTo(refCarte.current);
+        }, 0);
+        
         return decorator;
     };
 
@@ -134,15 +138,17 @@ const Carte: React.FC<CarteProps> = ({
 
     useEffect(() => {
         reinitialiserFlèches();
-        const nouveauxDecorateurs = itineraires.map((itineraire, index) => {
-            const positions = itineraire.cheminIntersections.map(intersection => [
-                intersection.latitude,
-                intersection.longitude
-            ]);
-            const isSelected = itineraireSelectionne === index;
-            return addArrowsToPolyline(positions, isSelected);
-        });
-        setDecorateursFlèches(nouveauxDecorateurs);
+        setTimeout(() => {
+            const nouveauxDecorateurs = itineraires.map((itineraire, index) => {
+                const positions = itineraire.cheminIntersections.map(intersection => [
+                    intersection.latitude,
+                    intersection.longitude
+                ]);
+                const isSelected = itineraireSelectionne === index;
+                return addArrowsToPolyline(positions, isSelected);
+            });
+            setDecorateursFlèches(nouveauxDecorateurs);
+        }, 100);
     }, [itineraires, itineraireSelectionne]);
 
 
