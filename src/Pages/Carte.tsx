@@ -62,8 +62,9 @@ const polygonStyle = {
     fillColor: 'transparent',
     fillOpacity: 0,
     weight: 3,
-    color: '#000',
-    opacity: 1
+    color: 'purple',
+    opacity: 0.8,
+    dashArray: '5, 5', // Pointillés avec des tirets et des espaces
 };
 
 // Fonction pour générer une couleur aléatoire en hexadécimal
@@ -98,6 +99,8 @@ const Carte: React.FC<CarteProps> = ({
     const [intersectionsFiltrees, setIntersectionsFiltrees] = useState<Intersection[]>([]);
     const [limitesCarte, setLimitesCarte] = useState<L.LatLngBounds | null>(null);
     const refCarte = useRef<L.Map>(null); // Reference to the map
+    const [initialCenter, setInitialCenter] = useState<L.LatLng | null>(null); // Par défaut à null
+
 
 
     const minNiveauZoomForIntersections = 16;
@@ -108,13 +111,13 @@ const Carte: React.FC<CarteProps> = ({
             if (!adresseEntrepot) {
                 // on ajoute l'action de l'ajout de la livraison à la stack
                 ajoutActionStack({ type: 0, intersection: newIntersection, isEntrepot: true });
-                
+
                 setAdresseEntrepot(newIntersection);
             } else {
                 setAdresseLivraisonsAjoutees([...adressesLivraisonsAjoutees, newIntersection]);
                 // vider la liste undo rollback car une action a été effectuée
                 viderListeUndoRollback();
-                
+
                 // on ajoute l'action de l'ajout de la livraison à la stack
                 ajoutActionStack({ type: 0, intersection: newIntersection,  isEntrepot: false });
             }
@@ -190,6 +193,13 @@ const Carte: React.FC<CarteProps> = ({
 
     }, [intersections, adressesLivraisonsXml, adresseEntrepot, adressesLivraisonsAjoutees, limitesCarte]);
 
+    useEffect(() => {
+        if (convexHull) {
+            const calculatedCenter = L.polygon(convexHull).getBounds().getCenter();
+            setInitialCenter(calculatedCenter); // Met à jour le centre dès que convexHull est disponible
+        }
+    }, [convexHull]);
+
     // Function to zoom and center the map on a specific point
     const gererZoomSurPoint = (latitude: number, longitude: number) => {
         if (refCarte.current) {
@@ -225,8 +235,8 @@ const Carte: React.FC<CarteProps> = ({
         }
     }, [itineraireSelectionne, itineraires]);
 
-    return (
-        <MapContainer center={[45.75, 4.85]} zoom={niveauZoom} style={{height: '100%', width: '100%'}} ref={refCarte}>
+    return ( initialCenter ? (
+        <MapContainer center={initialCenter} zoom={niveauZoom} style={{height: '100%', width: '100%'}} ref={refCarte}>
             <MapTaille isTourneeCalculee={isTourneeCalculee}/>
             <MapEvents/>
             <TileLayer
@@ -453,7 +463,9 @@ const Carte: React.FC<CarteProps> = ({
                     </React.Fragment>
                 );
             })()}
-        </MapContainer>
+        </MapContainer> ) : (
+            <div>Chargement de la carte...</div> // Message de chargement ou autre contenu temporaire
+        )
     );
 };
 

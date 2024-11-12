@@ -64,13 +64,15 @@ interface GestionnaireItineraireProps {
     onChangementItineraires: (nouveauxItineraires: any[]) => void;
     itineraireSelectionne?: number;
     onSelectionItineraire: (index: number | undefined) => void;
+    
 }
 
 const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({ 
     itineraires, 
     onChangementItineraires,
     itineraireSelectionne,
-    onSelectionItineraire
+    onSelectionItineraire,
+    isTourneeCalculee
 }) => {
     const [dialogueOuvert, setDialogueOuvert] = useState(false);
     const [livraisonSelectionnee, setLivraisonSelectionnee] = useState<any>(null);
@@ -91,15 +93,10 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     //la structure n'est clairement pas optimale mais elle était en lien avec ce qu'il se passait dans le backend
     //vu que thomas vas changer le backend, il risque de falloir modifier ce code
 
-    useEffect(() => {
-        if (!retourEnCours) {
-            const deepCopyItineraires = deepCopy(itineraires);
-            setHistorique([...historique, deepCopyItineraires]);
-        }
-        else {
-            setRetourEnCours(false);
-        }
-    }, [itineraires]);
+    // useEffect(() => {
+    //     setHistorique([])
+    //     setHistoriqueAnnule([])
+    // }, [isTourneeCalculee]);
 
     const deplacerLivraison = (livraison: PointLivraison, indexSourceCoursier: number, indexDestinationCoursier: number) => {
         const nouveauxItineraires = [...itineraires];
@@ -143,44 +140,58 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     const supprimerLivraison = (livraison: PointLivraison, indexCoursier: number) => {
         const nouveauxItineraires = [...itineraires];
 
+        
+
+        mettreAJourItineraires(nouveauxItineraires);
+
         // Retirer la livraison de son itinéraire actuel
         const itineraire = nouveauxItineraires[indexCoursier];
         itineraire.livraisons.livraisons = itineraire.livraisons.livraisons.filter(
             l => l.intersection.id !== livraison.intersection.id
         );
-
-        mettreAJourItineraires(nouveauxItineraires);
     };
 
     const annulerDerniereAction = () => {
-        setRetourEnCours(true);
-        if (historique.length > 1) {
+        if (historique.length > 0) {
             const newHistory = [...historique];
             const actionAnnulee = newHistory.pop()!; // L'action qu'on annule
-            setHistoriqueAnnule([...historiqueAnnule, actionAnnulee]); // On la sauvegarde
-            const previousState = newHistory[newHistory.length - 1];
+            // const previousState = newHistory[newHistory.length - 1];
+            const previousState = deepCopy(itineraires);
+            console.log("je push sur annule : ", deepCopy(previousState))
+            setHistoriqueAnnule([...historiqueAnnule, deepCopy(previousState)]); // On la sauvegarde
             setHistorique(newHistory);
-            onChangementItineraires(deepCopy(previousState));
+            onChangementItineraires(deepCopy(actionAnnulee));
+            // console.log("histotique était :", historique);
+            // console.log("histotique devient :", newHistory);
+            // console.log("histotique pop :", deepCopy(actionAnnulee));
             setEstModifie(true);
         }
     };
 
     const retablirDerniereAction = () => {
-        setRetourEnCours(true);
+        // setRetourEnCours(true);
+        console.log("histo annule avant : ",historiqueAnnule)
         if (historiqueAnnule.length > 0) {
+            setHistorique([...historique, itineraires]);
             const newHistoriqueAnnule = [...historiqueAnnule];
             const actionARetablir = newHistoriqueAnnule.pop()!;
             setHistoriqueAnnule(newHistoriqueAnnule);
-            setHistorique([...historique, actionARetablir]);
+            console.log("annule push",actionARetablir)
+            // mettreAJourItineraires(deepCopy(actionARetablir))
             onChangementItineraires(deepCopy(actionARetablir));
             setEstModifie(true);
         }
     };
 
     const mettreAJourItineraires = (nouveauxItineraires: Itineraire[]) => {
-        onChangementItineraires(nouveauxItineraires);
+        const deepCopyItineraires = deepCopy(itineraires);
+        console.log("Je push sur l'historique :", deepCopyItineraires);
+        console.log("Historique mis à jour :", [...historique, deepCopyItineraires]);
+        setHistorique([...historique, deepCopyItineraires]);
+        
         setEstModifie(true);
         setHistoriqueAnnule([]);
+        // onChangementItineraires(nouveauxItineraires);
     };
 
     const appelerAPI = () => {
