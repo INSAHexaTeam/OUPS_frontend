@@ -56,10 +56,8 @@ export default function Accueil() {
     const zoomToPointRef = useRef<(latitude: number, longitude: number) => void>(() => {});
     const [itineraires, setItineraires] = useState<any[]>([]);
     const [isTourneeCalculee, setIsTourneeCalculee] = useState(false);
-<<<<<<< HEAD
     const [donneesTournee, setDonneesTournee] = useState([]);
     const navigation = useNavigate();
-=======
     const [actionStackRollback, setActionStackRollback] = useState<Action[]>([]);
     const [pileUndoRollback, setPileUndoRollback] = useState<Action[]>([]);
     const [isRollbackDesactive, setIsRollbackDesactive] = useState(true);
@@ -129,7 +127,6 @@ export default function Accueil() {
     const [chargemementCalculTournee, setChargemementCalculTournee] = useState(false);
 
     const [itineraireSelectionne, setItineraireSelectionne] = useState<number | undefined>(undefined);
->>>>>>> origin/main
 
     useEffect(() => {
         setListesTotalAdressesLivraisons([...adressesLivraisonsAjoutees, ...adressesLivraisonsXml]);
@@ -285,7 +282,6 @@ export default function Accueil() {
         try {
             setChargemementCalculTournee(true);
             const result = await calculerItineraire(livraisons);
-<<<<<<< HEAD
             console.log("HERE2",result);
             console.log("Liste des adresses de livraison ajoutées à la main : ", livraisons);
             setDonneesTournee(result.data.livraisons);
@@ -294,7 +290,6 @@ export default function Accueil() {
             setIsTourneeCalculee(true);
             console.log("HERE",result.data.livraisons);
 
-=======
 
             const itinerairesFomrmated = result.data.livraisons.map((itineraire, coursierIndex) => {
                 itineraire.livraisons.coursier = coursierIndex;
@@ -305,7 +300,6 @@ export default function Accueil() {
             setIsTourneeCalculee(true);
             setChargemementCalculTournee(false);
             toast.success("Tournée calculée avec succès");
->>>>>>> origin/main
         } catch (error) {
             console.error("Erreur lors du calcul de la tournée :", error);
             toast.error("Erreur lors du calcul de la tournée");
@@ -314,7 +308,6 @@ export default function Accueil() {
         }
     };
 
-<<<<<<< HEAD
     const telechargerTournee = async () => {
         try {
          
@@ -327,7 +320,6 @@ export default function Accueil() {
         }
     };
 
-=======
     function supprimerRequetesLivraisons() {
         // on supprime les adresses rentrées par l'utilisateur
         setAdresseLivraisonsAjoutees([]);
@@ -336,7 +328,6 @@ export default function Accueil() {
         }
         setDialogRequetesLivraisonOuvert(false);
     }
->>>>>>> origin/main
 
     return (
         <Box sx={{ display: "flex", flexDirection: "row", width: '100%', height: '100%', justifyContent: "center" }}>
@@ -466,7 +457,6 @@ export default function Accueil() {
                         
                     </Box>
                 )}
-<<<<<<< HEAD
             {planCharge && (
             <Box className="box-buttons" sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Button variant="contained" color="primary" onClick={telechargerTournee}>
@@ -474,7 +464,6 @@ export default function Accueil() {
                 </Button>
             </Box>
         )}
-=======
                 {isTourneeCalculee && (
                     <ItineraireManager
                         itineraires={itineraires}
@@ -483,7 +472,6 @@ export default function Accueil() {
                         onSelectionItineraire={setItineraireSelectionne}
                     />
                 )}
->>>>>>> origin/main
             </Box>
 
             <Dialog onClose={() => setDialogRequetesLivraisonOuvert(false)}
