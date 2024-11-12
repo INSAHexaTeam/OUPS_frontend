@@ -196,7 +196,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
 
     const appelerAPI = () => {
         console.log("Appel API effectué avec les itinéraires mis à jour");
-        
+        console.log("je vais envoyer : ", itineraires)
         const itinerairesOrdonnes = {
             livraisons: itineraires.map(itineraire => ({
                 cheminIntersections: itineraire.cheminIntersections || [],
@@ -206,10 +206,10 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                         intersection: itineraire.livraisons.entrepot.intersection
                     },
                     livraisons: [
-                        {
-                            intersection: itineraire.livraisons.entrepot.intersection,
-                            estUneLivraison: false
-                        },
+                        // {
+                        //     intersection: itineraire.livraisons.entrepot.intersection,
+                        //     estUneLivraison: false
+                        // },
                         ...itineraire.livraisons.livraisons.map(livraison => ({
                             intersection: livraison.intersection,
                             estUneLivraison: false
@@ -220,7 +220,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
             }))
         };
 
-        console.log(itinerairesOrdonnes);
+        console.log("itinerairesOrdonnes : ", itinerairesOrdonnes);
         calculerItineraireOrdonne(itinerairesOrdonnes)
             .then(response => {
                 const itineraires: Itineraire[] = response.data.livraisons.map((itineraire: any) => ({
