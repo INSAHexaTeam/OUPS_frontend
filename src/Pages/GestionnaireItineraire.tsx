@@ -22,7 +22,9 @@ import {
     Delete as DeleteIcon,
     Undo as UndoIcon,
     Redo as RedoIcon,
-    Add as AddIcon
+    Add as AddIcon,
+    ArrowUpward as ArrowUpIcon,
+    ArrowDownward as ArrowDownIcon
 } from '@mui/icons-material';
 import { calculerItineraireOrdonne } from '../Appels_api/calculerItineraireOrdonne.ts';
 import {definirAdressesSelonVoisins} from "../Utils/utils.ts";
@@ -241,6 +243,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     }
 
     const miseAJourPlusCourtCheminAPI = () => {
+        console.log("je met a jour", itineraires)
         const itinerairesOrdonnes = {
             livraisons: itineraires.map(itineraire => ({
                 cheminIntersections: itineraire.cheminIntersections || [],
@@ -377,6 +380,29 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
         zoomerVersPoint(livraison.intersection.latitude, livraison.intersection.longitude);
     };
 
+    const deplacerLivraison = (indexCoursier: number, indexLivraison: number, direction: 'up' | 'down') => {
+        const nouveauxItineraires = deepCopy(itineraires);
+        const livraisons = nouveauxItineraires[indexCoursier].livraisons.livraisons;
+        
+        // Ne pas déplacer l'entrepôt ou si on essaie de sortir des limites
+        if (indexLivraison <= 0 || indexLivraison >= livraisons.length - 1) return;
+        if ((direction === 'up' && indexLivraison <= 1) || 
+            (direction === 'down' && indexLivraison >= livraisons.length - 2)) return;
+
+        const nouvelIndex = direction === 'up' ? indexLivraison - 1 : indexLivraison + 1;
+        
+        // Sauvegarder l'état actuel dans l'historique
+        avantMiseAJourItineraires();
+        
+        // Échanger les positions
+        [livraisons[indexLivraison], livraisons[nouvelIndex]] = 
+        [livraisons[nouvelIndex], livraisons[indexLivraison]];
+
+        onChangementItineraires(nouveauxItineraires);
+        console.log("je met a jour", nouveauxItineraires)
+        miseAJourPlusCourtCheminAPI();
+    };
+
     return (
         <Box 
             sx={{ margin: 'auto', padding: 2 }}
@@ -477,14 +503,48 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                                         <Box sx={{
                                             display: 'flex',
                                             alignItems: 'center',
-                                            width: '100%'
+                                            width: '100%',
+                                            gap: 1
                                         }}>
+                                            {/* Boutons de flèches à gauche */}
+                                            {!estPremierEntrepot && !estDernierEntrepot && (
+                                                <Box sx={{ 
+                                                    display: 'flex', 
+                                                    flexDirection: 'column',
+                                                    gap: 0,
+                                                    minWidth: '32px'
+                                                }}>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            deplacerLivraison(indexCoursier, indexLivraison, 'up');
+                                                        }}
+                                                        disabled={indexLivraison <= 1}
+                                                        sx={{ padding: '2px' }}
+                                                    >
+                                                        <ArrowUpIcon fontSize="small" />
+                                                    </IconButton>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            deplacerLivraison(indexCoursier, indexLivraison, 'down');
+                                                        }}
+                                                        disabled={indexLivraison >= itineraire.livraisons.livraisons.length - 2}
+                                                        sx={{ padding: '2px' }}
+                                                    >
+                                                        <ArrowDownIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Box>
+                                            )}
+
+                                            {/* Contenu principal */}
                                             <Box sx={{ flexGrow: 1 }}>
                                                 {estPremierEntrepot || estDernierEntrepot ? (
                                                     <>
                                                         <Typography variant="body1" fontWeight="bold">
-                                                            Entrepôt <br/>
-                                                            
+                                                            Entrepôt
                                                         </Typography>
                                                         {livraison.intersection.id && (
                                                             <Typography variant="body2" color="text.secondary">
@@ -496,7 +556,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                                                 ) : (
                                                     <>
                                                         <Typography variant="body1">
-                                                            {livraison.intersection.adresse ? livraison.intersection.adresse :  definirAdressesSelonVoisins(livraison.intersection)}
+                                                            {livraison.intersection.adresse ? livraison.intersection.adresse : definirAdressesSelonVoisins(livraison.intersection)}
                                                         </Typography>
                                                         <Typography variant="body2" color="text.secondary">
                                                             ID: {livraison.intersection.id} <br/>
@@ -505,11 +565,16 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                                                     </>
                                                 )}
                                             </Box>
+
+                                            {/* Boutons d'action à droite */}
                                             <Box sx={{ display: 'flex', gap: 1 }}>
-                                                {!estDernierEntrepot && !estPremierEntrepot &&(
+                                                {!estPremierEntrepot && !estDernierEntrepot && (
                                                     <IconButton
                                                         size="small"
-                                                        onClick={() => supprimerLivraison(livraison, indexCoursier)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            supprimerLivraison(livraison, indexCoursier);
+                                                        }}
                                                     >
                                                         <DeleteIcon color="error" />
                                                     </IconButton>
@@ -517,7 +582,10 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                                                 {!estDernierEntrepot && (
                                                     <IconButton
                                                         size="small"
-                                                        onClick={() => ajouterLivraison(indexCoursier, indexLivraison)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            ajouterLivraison(indexCoursier, indexLivraison);
+                                                        }}
                                                     >
                                                         <AddIcon />
                                                     </IconButton>
