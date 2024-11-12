@@ -24,7 +24,7 @@ import '../Styles/Accueil.css';
 import {calculerItineraire} from "../Appels_api/calculerItineraire.ts";
 import {styled} from "@mui/material/styles";
 import ItineraireManager from "./GestionnaireItineraire.tsx";
-import {Action} from "../Utils/types";
+import {Action, itineraire, livraisonAjouteePourCoursier} from "../Utils/types";
 import {definirAdressesSelonVoisins} from "../Utils/utils.ts";
 
 const VisuallyHiddenInput = styled('input')({
@@ -53,7 +53,7 @@ export default function Accueil() {
     const [planCharge, setPlanCharge] = useState(false);
     const [numCouriers, setNumCouriers] = useState(1);
     const zoomToPointRef = useRef<(latitude: number, longitude: number) => void>(() => {});
-    const [itineraires, setItineraires] = useState<any[]>([]);
+    const [itineraires, setItineraires] = useState<itineraire[]>([]);
     const [isTourneeCalculee, setIsTourneeCalculee] = useState(false);
     const [actionStackRollback, setActionStackRollback] = useState<Action[]>([]);
     const [pileUndoRollback, setPileUndoRollback] = useState<Action[]>([]);
@@ -61,13 +61,21 @@ export default function Accueil() {
     const [isUndoRollbackDesactive, setIsUndoRollbackDesactive] = useState(true);
     const [fichierSelectionne, setFichierSelectionne] = useState<File | null>(null);
     
+    // permet de savoir à quel coursier on ajoute une adresse de livraison (après calcul de la tournée)
+    const [livraisonAjouteePourCoursier,  setLivraisonAjouteePourCoursier] = useState<livraisonAjouteePourCoursier | null>(null);
+    
     const [dialogRequetesLivraisonOuvert, setDialogRequetesLivraisonOuvert] = useState(false);
+    
+    
+    useEffect(() => {
+        console.log("changement livraisonAjouteePourCoursier : ", livraisonAjouteePourCoursier);
+    }, [livraisonAjouteePourCoursier]);
     
     // permet d'ajouter une action à la pile
     const ajoutActionStack = (action: Action) => {
         setActionStackRollback(prev => [...prev, action]);
     };
-
+    
     useEffect(() => {
         setIsRollbackDesactive(actionStackRollback.length === 0);
         setIsUndoRollbackDesactive(pileUndoRollback.length === 0);
@@ -129,7 +137,7 @@ export default function Accueil() {
         setListesTotalAdressesLivraisons([...adressesLivraisonsAjoutees, ...adressesLivraisonsXml]);
     }, [adressesLivraisonsAjoutees, adressesLivraisonsXml]);
 
-    const gereLesChangeementsdItineraire = (newItineraires: Itineraire[]) => {
+    const gereLesChangementsdItineraire = (newItineraires: Itineraire[]) => {
         setItineraires(newItineraires);
         // Appeler votre API ou mettre à jour la carte ici
     };
@@ -297,8 +305,6 @@ export default function Accueil() {
                 intersection: livraison
             }))
         };
-        
-        console.log("livraisons", livraisons);
 
         try {
             setChargemementCalculTournee(true);
@@ -306,7 +312,6 @@ export default function Accueil() {
 
             const itinerairesFomrmated = result.data.livraisons.map((itineraire, coursierIndex) => {
                 itineraire.livraisons.coursier = coursierIndex;
-                console.log("itineraire", itineraire);
                 return itineraire;
             });
             setItineraires(itinerairesFomrmated);
@@ -401,6 +406,8 @@ export default function Accueil() {
                                     itineraires={itineraires}
                                     itineraireSelectionne={itineraireSelectionne}
                                     isTourneeCalculee={isTourneeCalculee}
+                                    livraisonAjouteePourCoursier={livraisonAjouteePourCoursier}
+                                    setLivraisonAjouteePourCoursier={setLivraisonAjouteePourCoursier}
                                 />
                             </Box>
 
@@ -461,10 +468,20 @@ export default function Accueil() {
                 {isTourneeCalculee && (
                     <ItineraireManager
                         itineraires={itineraires}
-                        onChangementItineraires={gereLesChangeementsdItineraire}
+                        onChangementItineraires={gereLesChangementsdItineraire}
                         itineraireSelectionne={itineraireSelectionne}
                         onSelectionItineraire={setItineraireSelectionne}
                         isTourneeCalculee={isTourneeCalculee}
+                        
+                        // On passe les adresses de livraisons (xml et manuelles) 
+                        // pour les mettre à jour dans le gestionnaire d'itinéraire
+                        adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
+                        setAdressesLivraisonsAjoutees={setAdresseLivraisonsAjoutees}
+                        adressesLivraisonsXml={adressesLivraisonsXml}
+                        setAdressesLivraisonsXml={setAdressesLivraisonsXml}
+
+                        livraisonAjouteePourCoursier={livraisonAjouteePourCoursier}
+                        setLivraisonAjouteePourCoursier={setLivraisonAjouteePourCoursier}
                     />
                 )}
             </Box>

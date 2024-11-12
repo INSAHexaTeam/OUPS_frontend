@@ -20,13 +20,15 @@ import {
 } from '@mui/material';
 import {
     Delete as DeleteIcon,
-    ExpandMore as ExpandMoreIcon,
     Undo as UndoIcon,
     Redo as RedoIcon,
-    SwapHoriz as SwapHorizIcon
+    Add as AddIcon
 } from '@mui/icons-material';
 import { calculerItineraireOrdonne } from '../Appels_api/calculerItineraireOrdonne.ts';
-import { ItineraireOrdonne } from '../Utils/points.tsx';
+import {definirAdressesSelonVoisins} from "../Utils/utils.ts";
+import {Intersection} from "../Utils/points";
+import {livraisonAjouteePourCoursier} from "../Utils/types";
+import toast, {Toaster} from "react-hot-toast";
 
 interface PointLivraison {
     intersection: {
@@ -64,7 +66,12 @@ interface GestionnaireItineraireProps {
     onChangementItineraires: (nouveauxItineraires: any[]) => void;
     itineraireSelectionne?: number;
     onSelectionItineraire: (index: number | undefined) => void;
-    
+    adressesLivraisonsAjoutees: Intersection[];
+    adressesLivraisonsXml: Intersection[];
+    setAdressesLivraisonsAjoutees: (adresses: Intersection[]) => void;
+    setAdressesLivraisonsXml: (adresses: Intersection[]) => void;
+    setLivraisonAjouteePourCoursier: (livraisonAjouteePourCoursier: livraisonAjouteePourCoursier) => void;
+    livraisonAjouteePourCoursier: livraisonAjouteePourCoursier;
 }
 
 const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({ 
@@ -72,7 +79,13 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     onChangementItineraires,
     itineraireSelectionne,
     onSelectionItineraire,
-    isTourneeCalculee
+    isTourneeCalculee,
+    adressesLivraisonsAjoutees,
+    adressesLivraisonsXml,
+    setAdressesLivraisonsAjoutees,
+    setAdressesLivraisonsXml,
+    setLivraisonAjouteePourCoursier,
+    livraisonAjouteePourCoursier
 }) => {
     const [dialogueOuvert, setDialogueOuvert] = useState(false);
     const [livraisonSelectionnee, setLivraisonSelectionnee] = useState<any>(null);
@@ -93,10 +106,6 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     //la structure n'est clairement pas optimale mais elle était en lien avec ce qu'il se passait dans le backend
     //vu que thomas vas changer le backend, il risque de falloir modifier ce code
 
-    // useEffect(() => {
-    //     setHistorique([])
-    //     setHistoriqueAnnule([])
-    // }, [isTourneeCalculee]);
 
     const deplacerLivraison = (livraison: PointLivraison, indexSourceCoursier: number, indexDestinationCoursier: number) => {
         const nouveauxItineraires = [...itineraires];
@@ -119,8 +128,6 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     };
 
     const sauvegarderModification = () => {
-        if (!livraisonSelectionnee) return;
-
         const nouveauxItineraires = [...itineraires];
 
         // Retirer la livraison de son itinéraire actuel
@@ -149,7 +156,28 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
         itineraire.livraisons.livraisons = itineraire.livraisons.livraisons.filter(
             l => l.intersection.id !== livraison.intersection.id
         );
+        
+        supprimerDansXmlOuAjoutees(livraison);
+        mettreAJourItineraires(nouveauxItineraires);
+        //miseAJourPlusCourtCheminAPI();
     };
+    
+    // Fonction pour supprimer une livraison dans les adresses ajoutées ou dans le XML (si elle y était)
+    const supprimerDansXmlOuAjoutees = (livraison: PointLivraison) => {
+        const indexXML = adressesLivraisonsXml.findIndex((adresse) => adresse.id === livraison.intersection.id);
+        if (indexXML !== -1) {
+            const nouvelleListeSansLivraison = [...adressesLivraisonsXml];
+            nouvelleListeSansLivraison.splice(indexXML, 1);
+            setAdressesLivraisonsXml(nouvelleListeSansLivraison);
+        } else {
+            const indexAjout = adressesLivraisonsAjoutees.findIndex((adresse) => adresse.id === livraison.intersection.id);
+            if (indexAjout !== -1) {
+                const nouvelleListeSansLivraison = [...adressesLivraisonsAjoutees];
+                nouvelleListeSansLivraison.splice(indexAjout, 1);
+                setAdressesLivraisonsAjoutees(nouvelleListeSansLivraison);
+            }
+        }
+    }
 
     const annulerDerniereAction = () => {
         if (historique.length > 0) {
@@ -194,7 +222,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
         // onChangementItineraires(nouveauxItineraires);
     };
 
-    const appelerAPI = () => {
+    const miseAJourPlusCourtCheminAPI = () => {
         const itinerairesOrdonnes = {
             livraisons: itineraires.map(itineraire => ({
                 cheminIntersections: itineraire.cheminIntersections || [],
@@ -205,8 +233,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                     },
                     livraisons: [
                         ...itineraire.livraisons.livraisons.map(livraison => ({
-                            intersection: livraison.intersection,
-                            estUneLivraison: false
+                            intersection: livraison.intersection
                         }))
                     ],
                     coursier: null
@@ -239,6 +266,42 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
         }
     };
 
+    function ajouterLivraison(indexCoursier: number, indexLivraison: number) {
+        toast.success("Cliquez sur une intersection de la carte pour ajouter une livraison au coursier n°" + (indexCoursier + 1), {
+            duration: 3000
+        });
+        const livraisonAjouteePourCoursier = {
+            numeroCoursier: indexCoursier,
+            indexLivraison: indexLivraison,
+            intersection: null // pour l'instant, on ne sait pas quelle intersection ajouter
+        }
+
+        setLivraisonAjouteePourCoursier(livraisonAjouteePourCoursier);
+    }
+    
+    useEffect(() => {
+        if (livraisonAjouteePourCoursier?.intersection){
+            // ajouter la livraison à l'itinéraire (grâce à l'index de la livraison et du coursier)
+            const nouveauxItineraires = [...itineraires];
+            
+            const livraiseAAjouter = {
+                intersection: livraisonAjouteePourCoursier.intersection,
+                estUneLivraison: true,
+                distanceParcourue: 0,
+                heureArrivee: "00:00:00",
+            }
+            
+            // Récupération de l'itinéraire du coursier
+            const itineraireCoursier = nouveauxItineraires[livraisonAjouteePourCoursier.numeroCoursier];
+            itineraireCoursier.livraisons.livraisons.splice(livraisonAjouteePourCoursier.indexLivraison, 0, livraiseAAjouter);
+            
+            console.log("nouveauxItineraires", nouveauxItineraires);
+            mettreAJourItineraires(nouveauxItineraires);
+            //miseAJourPlusCourtCheminAPI();
+            setLivraisonAjouteePourCoursier(null);
+        }
+    }, [livraisonAjouteePourCoursier]);
+        
     return (
         <Box 
             sx={{ margin: 'auto', padding: 2 }}
@@ -248,6 +311,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                 }
             }}
         >
+            <Toaster />
             <Typography variant="h4" gutterBottom>
                 Gestion des Itinéraires
             </Typography>
@@ -270,7 +334,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                 />
 
                 <Button 
-                    onClick={appelerAPI} 
+                    onClick={miseAJourPlusCourtCheminAPI} 
                     disabled={!estModifie} 
                     variant="contained"
                 >
@@ -307,16 +371,13 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                                 {itineraire.livraisons.livraisons.length} livraisons
                             </Typography>
 
-                            <List sx={{
-                                bgcolor: 'background.paper',
-                                borderRadius: 1,
-                                minHeight: 400,
-                                maxHeight: 'calc(100vh - 250px)',
-                                overflowY: 'auto'
-                            }}>
-                                {itineraire.livraisons.livraisons.map((livraison, livraisonIndex) => (
+                            <List>
+                            {itineraire.livraisons.livraisons.map((livraison, indexLivraison) => {
+                                const estPremierEntrepot = indexLivraison === 0;
+                                const estDernierEntrepot = indexLivraison === itineraire.livraisons.livraisons.length - 1;
+                                return (
                                     <ListItem
-                                        key={livraison.intersection.id}
+                                        key={`${livraison.intersection.id}-${indexLivraison}`}
                                         sx={{
                                             my: 1,
                                             border: 1,
@@ -331,58 +392,72 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                                             width: '100%'
                                         }}>
                                             <Box sx={{ flexGrow: 1 }}>
-                                                <Typography variant="body1">
-                                                    Livraison {livraisonIndex + 1}
-                                                </Typography>
-                                                <Typography variant="body2" color="text.secondary">
-                                                    ID: {livraison.intersection.id}
-                                                </Typography>
-                                                {livraison.intersection.adresse && (
-                                                    <Typography
-                                                        variant="body2"
-                                                        color="text.secondary"
-                                                        sx={{
-                                                            whiteSpace: 'nowrap',
-                                                            overflow: 'hidden',
-                                                            textOverflow: 'ellipsis'
-                                                        }}
-                                                    >
-                                                        {livraison.intersection.adresse}
-                                                    </Typography>
+                                                {estPremierEntrepot || estDernierEntrepot ? (
+                                                    <>
+                                                        <Typography variant="body1" fontWeight="bold">
+                                                            Entrepôt
+                                                        </Typography>
+                                                        {livraison.intersection.adresse && (
+                                                            <Typography
+                                                                variant="body2"
+                                                                color="text.secondary"
+                                                                sx={{
+                                                                    whiteSpace: 'nowrap',
+                                                                    overflow: 'hidden',
+                                                                    textOverflow: 'ellipsis'
+                                                                }}
+                                                            >
+                                                                {livraison.intersection.adresse}
+                                                            </Typography>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Typography variant="body1">
+                                                            {definirAdressesSelonVoisins(livraison.intersection)}
+                                                        </Typography>
+                                                        <Typography variant="body2" color="text.secondary">
+                                                            ID: {livraison.intersection.id}
+                                                        </Typography>
+                                                        {livraison.intersection.adresse && (
+                                                            <Typography
+                                                                variant="body2"
+                                                                color="text.secondary"
+                                                                sx={{
+                                                                    whiteSpace: 'nowrap',
+                                                                    overflow: 'hidden',
+                                                                    textOverflow: 'ellipsis'
+                                                                }}
+                                                            >
+                                                                {livraison.intersection.adresse}
+                                                            </Typography>
+                                                        )}
+                                                    </>
                                                 )}
                                             </Box>
                                             <Box sx={{ display: 'flex', gap: 1 }}>
-                                                <Select
-                                                    size="small"
-                                                    value={indexCoursier}
-                                                    onChange={(e) => deplacerLivraison(
-                                                        livraison,
-                                                        indexCoursier,
-                                                        e.target.value as number
-                                                    )}
-                                                    sx={{ minWidth: 120 }}
-                                                >
-                                                    {itineraires.map((_, index) => (
-                                                        <MenuItem 
-                                                            key={index} 
-                                                            value={index}
-                                                            disabled={index === indexCoursier}
-                                                        >
-                                                            Coursier {index + 1}
-                                                        </MenuItem>
-                                                    ))}
-                                                </Select>
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => supprimerLivraison(livraison, indexCoursier)}
-                                                >
-                                                    <DeleteIcon />
-                                                </IconButton>
+                                                {!estDernierEntrepot && !estPremierEntrepot &&(
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => supprimerLivraison(livraison, indexCoursier)}
+                                                    >
+                                                        <DeleteIcon color="error" />
+                                                    </IconButton>
+                                                )}
+                                                {!estDernierEntrepot && (
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => ajouterLivraison(indexCoursier, indexLivraison)}
+                                                    >
+                                                        <AddIcon />
+                                                    </IconButton>
+                                                )}
                                             </Box>
                                         </Box>
                                     </ListItem>
-                                ))}
-                            </List>
+                                );
+                            })}
+                        </List>
                         </CardContent>
                     </Card>
                 ))}

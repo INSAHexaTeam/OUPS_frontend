@@ -6,7 +6,7 @@ import * as turf from '@turf/turf';
 import { Button } from '@mui/material';
 import { Point, Intersection } from '../Utils/points';
 import 'leaflet/dist/leaflet.css';
-import { Action } from "../Utils/types";
+import {Action, itineraire, livraisonAjouteePourCoursier} from "../Utils/types";
 import MapTaille from './MapTaille.tsx';
 
 interface CarteProps {
@@ -19,20 +19,16 @@ interface CarteProps {
     adresseEntrepot: Intersection | null;
     setAdresseEntrepot: (adresse: Intersection) => void;
     zoomerVersPoint: (latitude: number, longitude: number) => void;
-    itineraires: {
-        cheminIntersections: Intersection[];
-        livraisons: {
-            entrepot: {
-                intersection: Intersection;
-            };
-            livraisons: {
-                intersection: Intersection;
-                estUneLivraison: boolean;
-            }[];
-        };
-    }[];
+    
+    // si des itinéraires sont disponibles alors la tournée a été calculée
+    itineraires: itineraire[];
     itineraireSelectionne?: number;
+    livraisonAjouteePourCoursier : livraisonAjouteePourCoursier;
+    setLivraisonAjouteePourCoursier : (livraison: livraisonAjouteePourCoursier) => void;
+    
+    isTourneeCalculee : boolean;
 }
+
 
 const marqueurIntersections = new L.Icon({
     iconUrl: require('../img/bouton-denregistrement.png'),
@@ -81,6 +77,8 @@ const Carte: React.FC<CarteProps> = ({
                                          zoomerVersPoint,
                                          itineraires,
                                          itineraireSelectionne,
+                                         livraisonAjouteePourCoursier,
+                                         setLivraisonAjouteePourCoursier,    
                                          isTourneeCalculee
                                      }) => {
     const [niveauZoom, setNiveauZoom] = useState<number>(13);
@@ -149,6 +147,14 @@ const Carte: React.FC<CarteProps> = ({
         });
         setDecorateursFlèches(nouveauxDecorateurs);
     }, [itineraires]);
+
+
+    const ajoutLivraisonPourCoursier =  (intersection: Intersection) => {
+        const {numeroCoursier, indexLivraison} = livraisonAjouteePourCoursier;
+        const newLivraison = {numeroCoursier, indexLivraison, intersection};
+        console.log(newLivraison);
+        setLivraisonAjouteePourCoursier(newLivraison);
+    }
 
     const MapEvents = () => {
         useMapEvents({
@@ -255,10 +261,20 @@ const Carte: React.FC<CarteProps> = ({
                 <Marker key={intersection.id} position={[intersection.latitude, intersection.longitude]}
                         icon={marqueurIntersections}>
                     <Popup>
-                        <span>{`Intersection ID: ${intersection.id}`}</span>
-                        <br />
-                        <span><b>{`Adresse : ${intersection.adresse}`}</b><br /></span>
-                        <Button onClick={() => ajouterBouton(intersection.id, intersection.longitude, intersection.latitude, intersection.adresse)}>
+                        <span>{isTourneeCalculee && livraisonAjouteePourCoursier ? 'Ajouter une livraison pour le coursier ' + livraisonAjouteePourCoursier.numeroCoursier : 'Ajouter une livraison'}</span>
+                        <br/>
+                        <span><b>{`Adresse : ${intersection.adresse}`}</b><br/></span>
+                        <Button 
+                            disabled = {isTourneeCalculee && !livraisonAjouteePourCoursier}
+                            onClick={() => {
+                                if (!isTourneeCalculee) {
+                                    ajouterBouton(intersection.id, intersection.longitude, intersection.latitude, intersection.adresse)
+                                }else {
+                                    ajoutLivraisonPourCoursier(intersection);
+                                }
+                            }
+                            }
+                        >
                             {adresseEntrepot ? 'Ajouter une livraison' : 'Définir comme entrepôt'}
                         </Button>
                     </Popup>
