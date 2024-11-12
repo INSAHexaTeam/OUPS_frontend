@@ -120,6 +120,7 @@ const Carte: React.FC<CarteProps> = ({
     const ajoutLivraisonPourCoursier =  (intersection: Intersection) => {
         const {numeroCoursier, indexLivraison} = livraisonAjouteePourCoursier;
         const newLivraison = {numeroCoursier, indexLivraison, intersection};
+        console.log(newLivraison);
         setLivraisonAjouteePourCoursier(newLivraison);
     }
 

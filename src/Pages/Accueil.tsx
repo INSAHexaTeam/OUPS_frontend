@@ -66,6 +66,11 @@ export default function Accueil() {
     
     const [dialogRequetesLivraisonOuvert, setDialogRequetesLivraisonOuvert] = useState(false);
     
+    
+    useEffect(() => {
+        console.log("changement livraisonAjouteePourCoursier : ", livraisonAjouteePourCoursier);
+    }, [livraisonAjouteePourCoursier]);
+    
     // permet d'ajouter une action à la pile
     const ajoutActionStack = (action: Action) => {
         setActionStackRollback(prev => [...prev, action]);
@@ -132,7 +137,7 @@ export default function Accueil() {
         setListesTotalAdressesLivraisons([...adressesLivraisonsAjoutees, ...adressesLivraisonsXml]);
     }, [adressesLivraisonsAjoutees, adressesLivraisonsXml]);
 
-    const gereLesChangeementsdItineraire = (newItineraires: Itineraire[]) => {
+    const gereLesChangementsdItineraire = (newItineraires: Itineraire[]) => {
         setItineraires(newItineraires);
         // Appeler votre API ou mettre à jour la carte ici
     };
@@ -439,7 +444,7 @@ export default function Accueil() {
                 {isTourneeCalculee && (
                     <ItineraireManager
                         itineraires={itineraires}
-                        onChangementItineraires={gereLesChangeementsdItineraire}
+                        onChangementItineraires={gereLesChangementsdItineraire}
                         itineraireSelectionne={itineraireSelectionne}
                         onSelectionItineraire={setItineraireSelectionne}
                         
@@ -450,6 +455,7 @@ export default function Accueil() {
                         adressesLivraisonsXml={adressesLivraisonsXml}
                         setAdressesLivraisonsXml={setAdressesLivraisonsXml}
 
+                        livraisonAjouteePourCoursier={livraisonAjouteePourCoursier}
                         setLivraisonAjouteePourCoursier={setLivraisonAjouteePourCoursier}
                     />
                 )}

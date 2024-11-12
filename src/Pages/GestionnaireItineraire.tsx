@@ -256,23 +256,25 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     }
     
     useEffect(() => {
-        // si une livraison a été ajoutée au coursier (l'utilisateur a cliqué sur la map)
-        console.log("livraison ajoutée pour coursier", livraisonAjouteePourCoursier);
         if (livraisonAjouteePourCoursier?.intersection){
             // ajouter la livraison à l'itinéraire (grâce à l'index de la livraison et du coursier)
             const nouveauxItineraires = [...itineraires];
-            console.log("livraison ajoutée pour coursier", livraisonAjouteePourCoursier);
-            console.log("nouveaux itinéraires", nouveauxItineraires);
-            const livraison = {
+            
+            const livraiseAAjouter = {
                 intersection: livraisonAjouteePourCoursier.intersection,
-                estUneLivraison: true
+                estUneLivraison: true,
+                distanceParcourue: 0,
+                heureArrivee: "00:00:00",
             }
-            console.log("livraison", livraison);
-            const itineraire = nouveauxItineraires[livraisonAjouteePourCoursier.numeroCoursier];
-            console.log("itinéraire avant ajout", itineraire);
-            itineraire.livraisons.livraisons.splice(livraisonAjouteePourCoursier.indexLivraison, 0, livraison);
-            console.log("itinéraire après ajout", itineraire);
+            
+            // Récupération de l'itinéraire du coursier
+            const itineraireCoursier = nouveauxItineraires[livraisonAjouteePourCoursier.numeroCoursier];
+            itineraireCoursier.livraisons.livraisons.splice(livraisonAjouteePourCoursier.indexLivraison, 0, livraiseAAjouter);
+            
+            console.log("nouveauxItineraires", nouveauxItineraires);
             mettreAJourItineraires(nouveauxItineraires);
+            //miseAJourPlusCourtCheminAPI();
+            setLivraisonAjouteePourCoursier(null);
         }
     }, [livraisonAjouteePourCoursier]);
         
@@ -346,9 +348,12 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                             </Typography>
 
                             <List>
-                                {itineraire.livraisons.livraisons.map((livraison, indexLivraison) => (
+                            {itineraire.livraisons.livraisons.map((livraison, indexLivraison) => {
+                                const estPremierEntrepot = indexLivraison === 0;
+                                const estDernierEntrepot = indexLivraison === itineraire.livraisons.livraisons.length - 1;
+                                return (
                                     <ListItem
-                                        key={livraison.intersection.id}
+                                        key={`${livraison.intersection.id}-${indexLivraison}`}
                                         sx={{
                                             my: 1,
                                             border: 1,
@@ -363,44 +368,72 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                                             width: '100%'
                                         }}>
                                             <Box sx={{ flexGrow: 1 }}>
-                                                <Typography variant="body1">
-                                                    {definirAdressesSelonVoisins(livraison.intersection)}
-                                                </Typography>
-                                                <Typography variant="body2" color="text.secondary">
-                                                    ID: {livraison.intersection.id}
-                                                </Typography>
-                                                {livraison.intersection.adresse && (
-                                                    <Typography
-                                                        variant="body2"
-                                                        color="text.secondary"
-                                                        sx={{
-                                                            whiteSpace: 'nowrap',
-                                                            overflow: 'hidden',
-                                                            textOverflow: 'ellipsis'
-                                                        }}
-                                                    >
-                                                        {livraison.intersection.adresse}
-                                                    </Typography>
+                                                {estPremierEntrepot || estDernierEntrepot ? (
+                                                    <>
+                                                        <Typography variant="body1" fontWeight="bold">
+                                                            Entrepôt
+                                                        </Typography>
+                                                        {livraison.intersection.adresse && (
+                                                            <Typography
+                                                                variant="body2"
+                                                                color="text.secondary"
+                                                                sx={{
+                                                                    whiteSpace: 'nowrap',
+                                                                    overflow: 'hidden',
+                                                                    textOverflow: 'ellipsis'
+                                                                }}
+                                                            >
+                                                                {livraison.intersection.adresse}
+                                                            </Typography>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Typography variant="body1">
+                                                            {definirAdressesSelonVoisins(livraison.intersection)}
+                                                        </Typography>
+                                                        <Typography variant="body2" color="text.secondary">
+                                                            ID: {livraison.intersection.id}
+                                                        </Typography>
+                                                        {livraison.intersection.adresse && (
+                                                            <Typography
+                                                                variant="body2"
+                                                                color="text.secondary"
+                                                                sx={{
+                                                                    whiteSpace: 'nowrap',
+                                                                    overflow: 'hidden',
+                                                                    textOverflow: 'ellipsis'
+                                                                }}
+                                                            >
+                                                                {livraison.intersection.adresse}
+                                                            </Typography>
+                                                        )}
+                                                    </>
                                                 )}
                                             </Box>
                                             <Box sx={{ display: 'flex', gap: 1 }}>
-                                                <IconButton
-                                                    size = "small"
-                                                    onClick = {() => supprimerLivraison(livraison, indexCoursier)}
-                                                >
-                                                    <DeleteIcon color="error"/>
-                                                </IconButton>
-                                                <IconButton 
-                                                    size = "small"
-                                                    onClick = {() => ajouterLivraison(indexCoursier, indexLivraison)}
-                                                >
-                                                    <AddIcon />
-                                                </IconButton>
+                                                {!estDernierEntrepot && !estPremierEntrepot &&(
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => supprimerLivraison(livraison, indexCoursier)}
+                                                    >
+                                                        <DeleteIcon color="error" />
+                                                    </IconButton>
+                                                )}
+                                                {!estDernierEntrepot && (
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => ajouterLivraison(indexCoursier, indexLivraison)}
+                                                    >
+                                                        <AddIcon />
+                                                    </IconButton>
+                                                )}
                                             </Box>
                                         </Box>
                                     </ListItem>
-                                ))}
-                            </List>
+                                );
+                            })}
+                        </List>
                         </CardContent>
                     </Card>
                 ))}
