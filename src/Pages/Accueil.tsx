@@ -13,6 +13,8 @@ import { enregistrerRequetesLivraisons } from "../Appels_api/enregistrerRequetes
 import '../Styles/Accueil.css';
 import {calculerItineraire} from "../Appels_api/calculerItineraire.ts";
 import {styled} from "@mui/material/styles";
+import { useNavigate } from 'react-router-dom';
+
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -41,6 +43,8 @@ export default function Accueil() {
     const zoomToPointRef = useRef<(latitude: number, longitude: number) => void>(() => {});
     const [itineraires, setItineraires] = useState<any[]>([]);
     const [isTourneeCalculee, setIsTourneeCalculee] = useState(false);
+    const [donneesTournee, setDonneesTournee] = useState([]);
+    const navigation = useNavigate();
 
     useEffect(() => {
         setListesTotalAdressesLivraisons([...adressesLivraisonsAjoutees, ...adressesLivraisonsXml]);
@@ -175,12 +179,13 @@ export default function Accueil() {
 
         try {
             const result = await calculerItineraire(livraisons);
+            console.log("HERE2",result);
             console.log("Liste des adresses de livraison ajoutées à la main : ", livraisons);
-
+            setDonneesTournee(result.data.livraisons);
             // Utiliser result.data directement sans .text() puisqu'il est déjà en JSON
             setItineraires(result.data.livraisons);  // Mettre à jour avec les données des tournées
             setIsTourneeCalculee(true);
-            toast.success("Tournée calculée avec succès");
+            console.log("HERE",result.data.livraisons);
 
         } catch (error) {
             console.error("Erreur lors du calcul de la tournée :", error);
@@ -188,6 +193,19 @@ export default function Accueil() {
             setIsTourneeCalculee(false);
         }
     };
+
+    const telechargerTournee = async () => {
+        try {
+         
+            navigation('/export', { state: { donneesTournee } });
+
+
+        } catch (error) {
+            console.error("Erreur lors du téléchargement de la tournée:", error);
+            toast.error("Erreur lors du téléchargement de la tournée");
+        }
+    };
+
 
     return (
         <Box sx={{ display: "flex", flexDirection: "row", width: '100%', height: '100%', justifyContent: "center" }}>
@@ -294,6 +312,13 @@ export default function Accueil() {
                         </Button>
                     </Box>
                 )}
+            {planCharge && (
+            <Box className="box-buttons" sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Button variant="contained" color="primary" onClick={telechargerTournee}>
+                    Telecharger Tournee Finale
+                </Button>
+            </Box>
+        )}
             </Box>
         </Box>
     );

@@ -8,7 +8,7 @@ import {
 
 import Accueil from "./Pages/Accueil.tsx";
 import Carte from "./Pages/Carte.tsx";
-
+import AffichageTournee from "./Pages/AffichageTournee.tsx";
 
 const theme = createTheme();
 function App() {
@@ -21,6 +21,7 @@ function App() {
             <Route exact path="/carte" element={<Carte />} />
             <Route exact path="/valider-carte" element={<Accueil />} />
             <Route exact path="/valider-demande" element={<Accueil />} />
+            <Route exact path="/export" element={<AffichageTournee />} />
           </Routes>
         </BrowserRouter>
       </ThemeProvider>
