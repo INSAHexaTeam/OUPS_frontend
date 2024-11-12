@@ -72,6 +72,7 @@ interface GestionnaireItineraireProps {
     setAdressesLivraisonsXml: (adresses: Intersection[]) => void;
     setLivraisonAjouteePourCoursier: (livraisonAjouteePourCoursier: livraisonAjouteePourCoursier) => void;
     livraisonAjouteePourCoursier: livraisonAjouteePourCoursier;
+    zoomerVersPoint: (latitude: number, longitude: number) => void;
 }
 
 const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({ 
@@ -85,7 +86,8 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     setAdressesLivraisonsAjoutees,
     setAdressesLivraisonsXml,
     setLivraisonAjouteePourCoursier,
-    livraisonAjouteePourCoursier
+    livraisonAjouteePourCoursier,
+    zoomerVersPoint,
 }) => {
     const [dialogueOuvert, setDialogueOuvert] = useState(false);
     const [livraisonSelectionnee, setLivraisonSelectionnee] = useState<any>(null);
@@ -370,6 +372,11 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
         }
     }, [itineraires])
         
+    const gererClicLivraison = (livraison: any) => {
+        // Zoomer vers la position de la livraison
+        zoomerVersPoint(livraison.intersection.latitude, livraison.intersection.longitude);
+    };
+
     return (
         <Box 
             sx={{ margin: 'auto', padding: 2 }}
@@ -459,8 +466,13 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                                             border: 1,
                                             borderColor: 'divider',
                                             borderRadius: 1,
-                                            bgcolor: 'white'
+                                            bgcolor: 'white',
+                                            cursor: 'pointer',
+                                            '&:hover': {
+                                                bgcolor: 'action.hover',
+                                            }
                                         }}
+                                        onClick={() => gererClicLivraison(livraison)}
                                     >
                                         <Box sx={{
                                             display: 'flex',

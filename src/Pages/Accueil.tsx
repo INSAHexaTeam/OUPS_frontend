@@ -471,16 +471,13 @@ export default function Accueil() {
                         itineraireSelectionne={itineraireSelectionne}
                         onSelectionItineraire={setItineraireSelectionne}
                         isTourneeCalculee={isTourneeCalculee}
-                        
-                        // On passe les adresses de livraisons (xml et manuelles) 
-                        // pour les mettre à jour dans le gestionnaire d'itinéraire
                         adressesLivraisonsAjoutees={adressesLivraisonsAjoutees}
                         setAdressesLivraisonsAjoutees={setAdresseLivraisonsAjoutees}
                         adressesLivraisonsXml={adressesLivraisonsXml}
                         setAdressesLivraisonsXml={setAdressesLivraisonsXml}
-
                         livraisonAjouteePourCoursier={livraisonAjouteePourCoursier}
                         setLivraisonAjouteePourCoursier={setLivraisonAjouteePourCoursier}
+                        zoomerVersPoint={zoomToPointRef.current}
                     />
                 )}
             </Box>
