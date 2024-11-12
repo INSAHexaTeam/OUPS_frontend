@@ -199,7 +199,31 @@ export default function Accueil() {
             }).catch((error) => {
             toast.error(error);
         });
-    }; 
+    };
+
+    const resetState = () => {
+        setMessage(null);
+        setErreurMessage(null);
+        setPoints([]);
+        setIntersections([]);
+        setAdresseLivraisonsAjoutees([]);
+        setAdressesLivraisonsXml([]);
+        setListesTotalAdressesLivraisons([]);
+        setPointDeRetrait(null);
+        setPlanCharge(false);
+        setNumCouriers(1);
+        setItineraires([]);
+        setIsTourneeCalculee(false);
+        setActionStackRollback([]);
+        setPileUndoRollback([]);
+        setIsRollbackDesactive(true);
+        setIsUndoRollbackDesactive(true);
+        setFichierSelectionne(null);
+        setChargementPlanEnCours(false);
+        setChargemementCalculTournee(false);
+        setItineraireSelectionne(undefined);
+        setDialogRequetesLivraisonOuvert(false);
+    };
     
     const gererLectureFichier = (file: File, isCarte: boolean = false) => {
         setIsTourneeCalculee(false);
@@ -209,6 +233,7 @@ export default function Accueil() {
                 if (e.target && typeof e.target.result === 'string') {
 
                     if (isCarte) {
+                        resetState();
                         setChargementPlanEnCours(true);
                         enregistrerCarte("CHARGEMENT", file)
                             .then((response) => {
@@ -245,7 +270,6 @@ export default function Accueil() {
     };
 
     const gererSelectionFichier = (event: ChangeEvent<HTMLInputElement>, isCarte: boolean = false) => {
-        setPointDeRetrait(null);
         const file = event.target.files?.[0];
         if (file) {
             setFichierSelectionne(file);
@@ -337,7 +361,7 @@ export default function Accueil() {
                             role={undefined}
                             variant="contained"
                             tabIndex={-1}
-                            disabled={chargementPlanEnCours}
+                            disabled={chargementPlanEnCours || isTourneeCalculee}
                             startIcon={<MailIcon />}
                         >
                             Charger des livraisons
