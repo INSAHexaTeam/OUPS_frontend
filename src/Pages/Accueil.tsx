@@ -233,6 +233,7 @@ export default function Accueil() {
                 if (e.target && typeof e.target.result === 'string') {
 
                     if (isCarte) {
+                        resetState();
                         setChargementPlanEnCours(true);
                         enregistrerCarte("CHARGEMENT", file)
                             .then((response) => {
@@ -360,7 +361,7 @@ export default function Accueil() {
                             role={undefined}
                             variant="contained"
                             tabIndex={-1}
-                            disabled={chargementPlanEnCours}
+                            disabled={chargementPlanEnCours || isTourneeCalculee}
                             startIcon={<MailIcon />}
                         >
                             Charger des livraisons
