@@ -199,7 +199,31 @@ export default function Accueil() {
             }).catch((error) => {
             toast.error(error);
         });
-    }; 
+    };
+
+    const resetState = () => {
+        setMessage(null);
+        setErreurMessage(null);
+        setPoints([]);
+        setIntersections([]);
+        setAdresseLivraisonsAjoutees([]);
+        setAdressesLivraisonsXml([]);
+        setListesTotalAdressesLivraisons([]);
+        setPointDeRetrait(null);
+        setPlanCharge(false);
+        setNumCouriers(1);
+        setItineraires([]);
+        setIsTourneeCalculee(false);
+        setActionStackRollback([]);
+        setPileUndoRollback([]);
+        setIsRollbackDesactive(true);
+        setIsUndoRollbackDesactive(true);
+        setFichierSelectionne(null);
+        setChargementPlanEnCours(false);
+        setChargemementCalculTournee(false);
+        setItineraireSelectionne(undefined);
+        setDialogRequetesLivraisonOuvert(false);
+    };
     
     const gererLectureFichier = (file: File, isCarte: boolean = false) => {
         setIsTourneeCalculee(false);
@@ -245,7 +269,6 @@ export default function Accueil() {
     };
 
     const gererSelectionFichier = (event: ChangeEvent<HTMLInputElement>, isCarte: boolean = false) => {
-        setPointDeRetrait(null);
         const file = event.target.files?.[0];
         if (file) {
             setFichierSelectionne(file);
