@@ -86,7 +86,6 @@ export default function Accueil() {
         setActionStackRollback(prev => {
             const lastAction = prev.pop();
             if (lastAction) {
-                // Ajouter l'action à la pile de undo rollback
                 setPileUndoRollback(prevUndo => [...prevUndo, lastAction]);
                 if (lastAction.type === 1) {
                     setAdresseLivraisonsAjoutees(prev => [...prev, lastAction.intersection]);

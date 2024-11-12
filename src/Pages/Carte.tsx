@@ -106,29 +106,25 @@ const Carte: React.FC<CarteProps> = ({
         }
     };
 
-    const addArrowsToPolyline = (positions: L.LatLngExpression[]) => {
+    const addArrowsToPolyline = (positions, isSelected = false) => {
         const polyline = L.polyline(positions);
-        const decorateur = L.polylineDecorator(polyline, {
-            patterns: [
-                {
-                    offset: 0,
-                    repeat: 100,
-                    symbol: L.Symbol.arrowHead({
-                        pixelSize: 15,
-                        polygon: false,
-                        pathOptions: {
-                            stroke: true,
-                            color: '#000000',
-                            fillColor: '#ffffff',
-                            weight: 2,
-                            opacity: 1
-                        }
-                    })
+        const arrowOptions = {
+            offset: '10%',
+            repeat: '60px',
+            symbol: L.Symbol.arrowHead({
+                pixelSize: isSelected ? 20 : 15,
+                polygon: false,
+                pathOptions: {
+                    color: isSelected ? '#000000' : '#FFD700', // Couleur jaune si sélectionné
+                    fillOpacity: 1,
+                    weight: isSelected ? 3 : 2,
+                    opacity: 1
                 }
-            ]
-        });
-        decorateur.addTo(refCarte.current!);
-        return decorateur;
+            })
+        };
+        const decorator = L.polylineDecorator(polyline, { patterns: [arrowOptions] });
+        decorator.addTo(refCarte.current); // Ajouter le décorateur de flèches à la carte
+        return decorator;
     };
 
     const reinitialiserFlèches = () => {
@@ -138,15 +134,16 @@ const Carte: React.FC<CarteProps> = ({
 
     useEffect(() => {
         reinitialiserFlèches();
-        const nouveauxDecorateurs = itineraires.map(itineraire => {
+        const nouveauxDecorateurs = itineraires.map((itineraire, index) => {
             const positions = itineraire.cheminIntersections.map(intersection => [
                 intersection.latitude,
                 intersection.longitude
             ]);
-            return addArrowsToPolyline(positions);
+            const isSelected = itineraireSelectionne === index;
+            return addArrowsToPolyline(positions, isSelected);
         });
         setDecorateursFlèches(nouveauxDecorateurs);
-    }, [itineraires]);
+    }, [itineraires, itineraireSelectionne]);
 
 
     const ajoutLivraisonPourCoursier =  (intersection: Intersection) => {
@@ -223,20 +220,18 @@ const Carte: React.FC<CarteProps> = ({
             lng + (offsetLng * metersToDegreesLng)
         ];
     };
-
     return (initialCenter ? (
         <MapContainer center={initialCenter} zoom={niveauZoom} style={{ height: '100%', width: '100%' }} ref={refCarte}>
             <MapTaille isTourneeCalculee={isTourneeCalculee} />
             <MapEvents />
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
+            {/* Rendre tous les itinéraires sauf le sélectionné */}
             {adresseEntrepot && itineraires.map((itineraire, index) => {
+                if (itineraireSelectionne === index) return null; // Ignorer l'itinéraire sélectionné ici
+
                 const color = couleursItineraires[index % couleursItineraires.length];
                 const offset = index * 1;
-
-                if (itineraireSelectionne !== undefined && index === itineraireSelectionne) {
-                    return null;
-                }
 
                 const offsetPositions = itineraire.cheminIntersections.map(intersection => {
                     return offsetLatLng(
@@ -256,6 +251,31 @@ const Carte: React.FC<CarteProps> = ({
                     </React.Fragment>
                 );
             })}
+
+            {/* Rendre l'itinéraire sélectionné au-dessus des autres */}
+            {itineraireSelectionne !== undefined && (
+                <React.Fragment key={`selected-${itineraireSelectionne}`}>
+                    {adresseEntrepot && (() => {
+                        const itineraire = itineraires[itineraireSelectionne];
+                        if (!itineraire) return null; // Vérifier si l'itinéraire existe
+
+                        const color = couleursItineraires[itineraireSelectionne % couleursItineraires.length];
+                        const positions = itineraire.cheminIntersections.map(intersection => [
+                            intersection.latitude,
+                            intersection.longitude
+                        ]);
+
+                        return (
+                            <>
+                                <Polyline positions={positions} color={'white'} weight={10} opacity={1} />
+                                <Polyline positions={positions} color={color} weight={6} opacity={1}>
+                                    <Popup>Tournée {itineraireSelectionne + 1}</Popup>
+                                </Polyline>
+                            </>
+                        );
+                    })()}
+                </React.Fragment>
+            )}
 
             {niveauZoom >= minNiveauZoomForIntersections && intersectionsFiltrees.map((intersection) => (
                 <Marker key={intersection.id} position={[intersection.latitude, intersection.longitude]}
@@ -316,34 +336,11 @@ const Carte: React.FC<CarteProps> = ({
             {convexHull && (
                 <Polygon positions={convexHull} pathOptions={polygonStyle} />
             )}
-
-            {adresseEntrepot && itineraireSelectionne !== undefined && (() => {
-                const itineraire = itineraires[itineraireSelectionne];
-                const color = couleursItineraires[itineraireSelectionne % couleursItineraires.length];
-                const offset = itineraireSelectionne * 1;
-
-                const offsetPositions = itineraire.cheminIntersections.map(intersection => {
-                    return offsetLatLng(
-                        intersection.latitude,
-                        intersection.longitude,
-                        offset,
-                        offset
-                    );
-                });
-
-                return (
-                    <React.Fragment key={`selected-${itineraireSelectionne}`}>
-                        <Polyline positions={offsetPositions} color={'white'} weight={12} opacity={1} />
-                        <Polyline positions={offsetPositions} color={color} weight={6} opacity={1}>
-                            <Popup>Tournée {itineraireSelectionne + 1}</Popup>
-                        </Polyline>
-                    </React.Fragment>
-                );
-            })()}
         </MapContainer>
     ) : (
         <div>Chargement de la carte...</div>
     ));
+
 };
 
 export default Carte;
