@@ -242,10 +242,10 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
         setHistoriqueAnnule([]);
     }
 
-    const miseAJourPlusCourtCheminAPI = () => {
-        console.log("je met a jour", itineraires)
+    const miseAJourPlusCourtCheminAPI = (nouveauxItineraires = itineraires) => {
+        console.log("je met a jour", nouveauxItineraires)
         const itinerairesOrdonnes = {
-            livraisons: itineraires.map(itineraire => ({
+            livraisons: nouveauxItineraires.map(itineraire => ({
                 cheminIntersections: itineraire.cheminIntersections || [],
                 livraisons: {
                     entrepot: {
@@ -398,9 +398,8 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
         [livraisons[indexLivraison], livraisons[nouvelIndex]] = 
         [livraisons[nouvelIndex], livraisons[indexLivraison]];
 
-        onChangementItineraires(nouveauxItineraires);
-        console.log("je met a jour", nouveauxItineraires)
-        miseAJourPlusCourtCheminAPI();
+        // Mettre à jour directement via l'API plutôt que de passer par onChangementItineraires
+        miseAJourPlusCourtCheminAPI(nouveauxItineraires);
     };
 
     return (
