@@ -20,13 +20,15 @@ import {
 } from '@mui/material';
 import {
     Delete as DeleteIcon,
-    ExpandMore as ExpandMoreIcon,
     Undo as UndoIcon,
     Redo as RedoIcon,
-    SwapHoriz as SwapHorizIcon
+    Add as AddIcon
 } from '@mui/icons-material';
 import { calculerItineraireOrdonne } from '../Appels_api/calculerItineraireOrdonne.ts';
-import { ItineraireOrdonne } from '../Utils/points.tsx';
+import {definirAdressesSelonVoisins} from "../Utils/utils.ts";
+import {Intersection} from "../Utils/points";
+import {livraisonAjouteePourCoursier} from "../Utils/types";
+import toast, {Toaster} from "react-hot-toast";
 
 interface PointLivraison {
     intersection: {
@@ -64,13 +66,25 @@ interface GestionnaireItineraireProps {
     onChangementItineraires: (nouveauxItineraires: any[]) => void;
     itineraireSelectionne?: number;
     onSelectionItineraire: (index: number | undefined) => void;
+    adressesLivraisonsAjoutees: Intersection[];
+    adressesLivraisonsXml: Intersection[];
+    setAdressesLivraisonsAjoutees: (adresses: Intersection[]) => void;
+    setAdressesLivraisonsXml: (adresses: Intersection[]) => void;
+    setLivraisonAjouteePourCoursier: (livraisonAjouteePourCoursier: livraisonAjouteePourCoursier) => void;
+    livraisonAjouteePourCoursier: livraisonAjouteePourCoursier;
 }
 
 const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({ 
     itineraires, 
     onChangementItineraires,
     itineraireSelectionne,
-    onSelectionItineraire
+    onSelectionItineraire,
+    adressesLivraisonsAjoutees,
+    adressesLivraisonsXml,
+    setAdressesLivraisonsAjoutees,
+    setAdressesLivraisonsXml,
+    setLivraisonAjouteePourCoursier,
+    livraisonAjouteePourCoursier
 }) => {
     const [dialogueOuvert, setDialogueOuvert] = useState(false);
     const [livraisonSelectionnee, setLivraisonSelectionnee] = useState<any>(null);
@@ -100,30 +114,8 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
             setRetourEnCours(false);
         }
     }, [itineraires]);
-
-    const deplacerLivraison = (livraison: PointLivraison, indexSourceCoursier: number, indexDestinationCoursier: number) => {
-        const nouveauxItineraires = [...itineraires];
-
-        // Retirer la livraison de son itinéraire actuel
-        const sourceLivraisons = nouveauxItineraires[indexSourceCoursier].livraisons.livraisons;
-        const livraisonIndex = sourceLivraisons.findIndex(l => l.intersection.id === livraison.intersection.id);
-        sourceLivraisons.splice(livraisonIndex, 1);
-
-        // Ajouter la livraison au nouvel itinéraire
-        nouveauxItineraires[indexDestinationCoursier].livraisons.livraisons.push(livraison);
-
-        mettreAJourItineraires(nouveauxItineraires);
-    };
-
-    const gererModificationLivraison = (livraison: PointLivraison, indexCoursier: number) => {
-        setLivraisonSelectionnee({ ...livraison, indexCoursier });
-        setCoursierSelectionne(indexCoursier);
-        setDialogueOuvert(true);
-    };
-
+    
     const sauvegarderModification = () => {
-        if (!livraisonSelectionnee) return;
-
         const nouveauxItineraires = [...itineraires];
 
         // Retirer la livraison de son itinéraire actuel
@@ -148,9 +140,28 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
         itineraire.livraisons.livraisons = itineraire.livraisons.livraisons.filter(
             l => l.intersection.id !== livraison.intersection.id
         );
-
+        
+        supprimerDansXmlOuAjoutees(livraison);
         mettreAJourItineraires(nouveauxItineraires);
+        miseAJourPlusCourtCheminAPI();
     };
+    
+    // Fonction pour supprimer une livraison dans les adresses ajoutées ou dans le XML (si elle y était)
+    const supprimerDansXmlOuAjoutees = (livraison: PointLivraison) => {
+        const indexXML = adressesLivraisonsXml.findIndex((adresse) => adresse.id === livraison.intersection.id);
+        if (indexXML !== -1) {
+            const nouvelleListeSansLivraison = [...adressesLivraisonsXml];
+            nouvelleListeSansLivraison.splice(indexXML, 1);
+            setAdressesLivraisonsXml(nouvelleListeSansLivraison);
+        } else {
+            const indexAjout = adressesLivraisonsAjoutees.findIndex((adresse) => adresse.id === livraison.intersection.id);
+            if (indexAjout !== -1) {
+                const nouvelleListeSansLivraison = [...adressesLivraisonsAjoutees];
+                nouvelleListeSansLivraison.splice(indexAjout, 1);
+                setAdressesLivraisonsAjoutees(nouvelleListeSansLivraison);
+            }
+        }
+    }
 
     const annulerDerniereAction = () => {
         setRetourEnCours(true);
@@ -183,9 +194,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
         setHistoriqueAnnule([]);
     };
 
-    const appelerAPI = () => {
-        console.log("Appel API effectué avec les itinéraires mis à jour");
-        
+    const miseAJourPlusCourtCheminAPI = () => {
         const itinerairesOrdonnes = {
             livraisons: itineraires.map(itineraire => ({
                 cheminIntersections: itineraire.cheminIntersections || [],
@@ -196,20 +205,17 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                     },
                     livraisons: [
                         {
-                            intersection: itineraire.livraisons.entrepot.intersection,
-                            estUneLivraison: false
+                            intersection: itineraire.livraisons.entrepot.intersection
                         },
                         ...itineraire.livraisons.livraisons.map(livraison => ({
-                            intersection: livraison.intersection,
-                            estUneLivraison: false
+                            intersection: livraison.intersection
                         }))
                     ],
                     coursier: null
                 }
             }))
         };
-
-        console.log(itinerairesOrdonnes);
+        
         calculerItineraireOrdonne(itinerairesOrdonnes)
             .then(response => {
                 const itineraires: Itineraire[] = response.data.livraisons.map((itineraire: any) => ({
@@ -236,6 +242,40 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
         }
     };
 
+    function ajouterLivraison(indexCoursier: number, indexLivraison: number) {
+        toast.success("Cliquez sur une intersection de la carte pour ajouter une livraison au coursier n°" + (indexCoursier + 1), {
+            duration: 3000
+        });
+        const livraisonAjouteePourCoursier = {
+            numeroCoursier: indexCoursier,
+            indexLivraison: indexLivraison,
+            intersection: null // pour l'instant, on ne sait pas quelle intersection ajouter
+        }
+
+        setLivraisonAjouteePourCoursier(livraisonAjouteePourCoursier);
+    }
+    
+    useEffect(() => {
+        // si une livraison a été ajoutée au coursier (l'utilisateur a cliqué sur la map)
+        console.log("livraison ajoutée pour coursier", livraisonAjouteePourCoursier);
+        if (livraisonAjouteePourCoursier?.intersection){
+            // ajouter la livraison à l'itinéraire (grâce à l'index de la livraison et du coursier)
+            const nouveauxItineraires = [...itineraires];
+            console.log("livraison ajoutée pour coursier", livraisonAjouteePourCoursier);
+            console.log("nouveaux itinéraires", nouveauxItineraires);
+            const livraison = {
+                intersection: livraisonAjouteePourCoursier.intersection,
+                estUneLivraison: true
+            }
+            console.log("livraison", livraison);
+            const itineraire = nouveauxItineraires[livraisonAjouteePourCoursier.numeroCoursier];
+            console.log("itinéraire avant ajout", itineraire);
+            itineraire.livraisons.livraisons.splice(livraisonAjouteePourCoursier.indexLivraison, 0, livraison);
+            console.log("itinéraire après ajout", itineraire);
+            mettreAJourItineraires(nouveauxItineraires);
+        }
+    }, [livraisonAjouteePourCoursier]);
+        
     return (
         <Box 
             sx={{ margin: 'auto', padding: 2 }}
@@ -245,6 +285,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                 }
             }}
         >
+            <Toaster />
             <Typography variant="h4" gutterBottom>
                 Gestion des Itinéraires
             </Typography>
@@ -267,7 +308,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                 />
 
                 <Button 
-                    onClick={appelerAPI} 
+                    onClick={miseAJourPlusCourtCheminAPI} 
                     disabled={!estModifie} 
                     variant="contained"
                 >
@@ -304,14 +345,8 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                                 {itineraire.livraisons.livraisons.length} livraisons
                             </Typography>
 
-                            <List sx={{
-                                bgcolor: 'background.paper',
-                                borderRadius: 1,
-                                minHeight: 400,
-                                maxHeight: 'calc(100vh - 250px)',
-                                overflowY: 'auto'
-                            }}>
-                                {itineraire.livraisons.livraisons.map((livraison, livraisonIndex) => (
+                            <List>
+                                {itineraire.livraisons.livraisons.map((livraison, indexLivraison) => (
                                     <ListItem
                                         key={livraison.intersection.id}
                                         sx={{
@@ -329,7 +364,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                                         }}>
                                             <Box sx={{ flexGrow: 1 }}>
                                                 <Typography variant="body1">
-                                                    Livraison {livraisonIndex + 1}
+                                                    {definirAdressesSelonVoisins(livraison.intersection)}
                                                 </Typography>
                                                 <Typography variant="body2" color="text.secondary">
                                                     ID: {livraison.intersection.id}
@@ -349,31 +384,17 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                                                 )}
                                             </Box>
                                             <Box sx={{ display: 'flex', gap: 1 }}>
-                                                <Select
-                                                    size="small"
-                                                    value={indexCoursier}
-                                                    onChange={(e) => deplacerLivraison(
-                                                        livraison,
-                                                        indexCoursier,
-                                                        e.target.value as number
-                                                    )}
-                                                    sx={{ minWidth: 120 }}
-                                                >
-                                                    {itineraires.map((_, index) => (
-                                                        <MenuItem 
-                                                            key={index} 
-                                                            value={index}
-                                                            disabled={index === indexCoursier}
-                                                        >
-                                                            Coursier {index + 1}
-                                                        </MenuItem>
-                                                    ))}
-                                                </Select>
                                                 <IconButton
-                                                    size="small"
-                                                    onClick={() => supprimerLivraison(livraison, indexCoursier)}
+                                                    size = "small"
+                                                    onClick = {() => supprimerLivraison(livraison, indexCoursier)}
                                                 >
-                                                    <DeleteIcon />
+                                                    <DeleteIcon color="error"/>
+                                                </IconButton>
+                                                <IconButton 
+                                                    size = "small"
+                                                    onClick = {() => ajouterLivraison(indexCoursier, indexLivraison)}
+                                                >
+                                                    <AddIcon />
                                                 </IconButton>
                                             </Box>
                                         </Box>

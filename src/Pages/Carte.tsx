@@ -5,7 +5,7 @@ import * as turf from '@turf/turf';
 import { Button } from '@mui/material';
 import { Point, Intersection } from '../Utils/points';
 import 'leaflet/dist/leaflet.css';
-import {Action} from "../Utils/types";
+import {Action, itineraire, livraisonAjouteePourCoursier} from "../Utils/types";
 import MapTaille from './MapTaille.tsx';
 
 interface CarteProps {
@@ -18,20 +18,16 @@ interface CarteProps {
     adresseEntrepot: Intersection | null;
     setAdresseEntrepot : (adresse: Intersection) => void;
     zoomerVersPoint: (latitude: number, longitude: number) => void; // New prop
-    itineraires: {
-        cheminIntersections: Intersection[];
-        livraisons: {
-            entrepot: {
-                intersection: Intersection;
-            };
-            livraisons: {
-                intersection: Intersection;
-                estUneLivraison: boolean;
-            }[];
-        };
-    }[];
+    
+    // si des itinéraires sont disponibles alors la tournée a été calculée
+    itineraires: itineraire[];
     itineraireSelectionne?: number; // Nouvel index pour l'itinéraire sélectionné
+    livraisonAjouteePourCoursier : livraisonAjouteePourCoursier;
+    setLivraisonAjouteePourCoursier : (livraison: livraisonAjouteePourCoursier) => void;
+    
+    isTourneeCalculee : boolean;
 }
+
 
 const marqueurIntersections = new L.Icon({
     iconUrl: require('../img/bouton-denregistrement.png'),
@@ -90,6 +86,8 @@ const Carte: React.FC<CarteProps> = ({
                                          zoomerVersPoint,
                                          itineraires,
                                          itineraireSelectionne,
+                                         livraisonAjouteePourCoursier,
+                                         setLivraisonAjouteePourCoursier,    
                                          isTourneeCalculee
                                      }) => {
     const [niveauZoom, setNiveauZoom] = useState<number>(13);
@@ -119,6 +117,11 @@ const Carte: React.FC<CarteProps> = ({
         }
     };
 
+    const ajoutLivraisonPourCoursier =  (intersection: Intersection) => {
+        const {numeroCoursier, indexLivraison} = livraisonAjouteePourCoursier;
+        const newLivraison = {numeroCoursier, indexLivraison, intersection};
+        setLivraisonAjouteePourCoursier(newLivraison);
+    }
 
     const MapEvents = () => {
         useMapEvents({
@@ -189,16 +192,6 @@ const Carte: React.FC<CarteProps> = ({
             lng + (offsetLng * metersToDegreesLng)
         ];
     };
-
-    // Ajouter cet effet pour logger l'itinéraire sélectionné
-    useEffect(() => {
-        console.log("État de l'itinéraire sélectionné:", itineraireSelectionne);
-        if (itineraireSelectionne !== undefined) {
-            const itineraire = itineraires[itineraireSelectionne];
-        } else {
-            console.log("Aucun itinéraire sélectionné");
-        }
-    }, [itineraireSelectionne, itineraires]);
 
     return (
         <MapContainer center={[45.75, 4.85]} zoom={niveauZoom} style={{height: '100%', width: '100%'}} ref={refCarte}>
@@ -299,11 +292,19 @@ const Carte: React.FC<CarteProps> = ({
                 <Marker key={intersection.id} position={[intersection.latitude, intersection.longitude]}
                         icon={marqueurIntersections}>
                     <Popup>
-                        <span>{`Intersection ID: ${intersection.id}`}</span>
+                        <span>{isTourneeCalculee && livraisonAjouteePourCoursier ? 'Ajouter une livraison pour le coursier ' + livraisonAjouteePourCoursier.numeroCoursier : 'Ajouter une livraison'}</span>
                         <br/>
                         <span><b>{`Adresse : ${intersection.adresse}`}</b><br/></span>
-                        <Button onClick={() =>
-                            ajouterBouton(intersection.id, intersection.longitude, intersection.latitude, intersection.adresse)}
+                        <Button 
+                            disabled = {isTourneeCalculee && !livraisonAjouteePourCoursier}
+                            onClick={() => {
+                                if (!isTourneeCalculee) {
+                                    ajouterBouton(intersection.id, intersection.longitude, intersection.latitude, intersection.adresse)
+                                }else {
+                                    ajoutLivraisonPourCoursier(intersection);
+                                }
+                            }
+                            }
                         >
                             {adresseEntrepot ? 'Ajouter une livraison' : 'Définir comme entrepôt'}
                         </Button>

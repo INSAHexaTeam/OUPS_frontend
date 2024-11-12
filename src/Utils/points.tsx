@@ -37,5 +37,4 @@ export interface ItineraireOrdonne {
         cheminIntersections: Intersection[];
         livraisons: Livraisons[];
     }
-    
 }
