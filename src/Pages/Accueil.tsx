@@ -343,7 +343,7 @@ export default function Accueil() {
         <Box sx={{ display: "flex", flexDirection: "row", width: '100%', height: '100%', justifyContent: "center" }}>
             <Toaster />
             <Box sx={{ position: 'fixed', top: '10px', left: '10px', zIndex: 1000 }}>
-                <Tooltip title="Recharger la page" placement="right">
+                <Tooltip title="Recommencer le processus" placement="right">
                     <IconButton onClick={rechargerPage}>
                         <ReplayRoundedIcon color="#212121"/>
                     </IconButton>
