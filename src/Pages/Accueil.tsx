@@ -11,7 +11,7 @@ import {
     FormControl,
     InputLabel,
     Dialog,
-    DialogTitle, DialogContentText, DialogContent, DialogActions
+    DialogTitle, DialogContentText, DialogContent, DialogActions, IconButton, Tooltip
 } from "@mui/material";
 import toast, { Toaster } from "react-hot-toast";
 import ListeRequetesLivraisonAjoutManuel from "./ListeRequetesLivraisonAjoutManuel.tsx";
@@ -26,6 +26,7 @@ import {styled} from "@mui/material/styles";
 import ItineraireManager from "./GestionnaireItineraire.tsx";
 import {Action, itineraire, livraisonAjouteePourCoursier} from "../Utils/types";
 import {definirAdressesSelonVoisins} from "../Utils/utils.ts";
+import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded';
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -283,6 +284,10 @@ export default function Accueil() {
             gererLectureFichier(file, isCarte);
         }
     };
+    
+    const rechargerPage = () => {
+        window.location.reload();
+    }
 
     const calculTournee = async () => {
         if(!pointDeRetrait){
@@ -337,6 +342,13 @@ export default function Accueil() {
     return (
         <Box sx={{ display: "flex", flexDirection: "row", width: '100%', height: '100%', justifyContent: "center" }}>
             <Toaster />
+            <Box sx={{ position: 'fixed', top: '10px', left: '10px', zIndex: 1000 }}>
+                <Tooltip title="Recharger la page" placement="right">
+                    <IconButton onClick={rechargerPage}>
+                        <ReplayRoundedIcon color="#212121"/>
+                    </IconButton>
+                </Tooltip>
+            </Box>
             <Box sx={{display: "flex", flexDirection: "column", width: '90%', gap: "2dvh"}}>
                 <Box>
                     <h1>Gestion des livraisons</h1>
