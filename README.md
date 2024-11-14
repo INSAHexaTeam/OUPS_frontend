@@ -12,14 +12,18 @@ Pour exécuter le projet React, suivez les étapes suivantes :
 
 1. **Installer les dépendances**  
    Assurez-vous d’avoir npm installés. Dans le répertoire du projet, exécutez :
+   
    ```sh
    npm install 
    ```
-2. **Démarrer le serveur de développement**
-  Après l’installation des dépendances, lancez l'application en mode développement avec :
+   
+3. **Démarrer le serveur de développement**
+   Après l’installation des dépendances, lancez l'application en mode développement avec :
+
    ```sh
    npm start
    ```
+   
    Accédez ensuite à l'application via http://localhost:3000 dans votre navigateur.
 
 Ces pas vous permettront de lancer le projet.
