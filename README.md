@@ -8,18 +8,19 @@ Cette application est conçue pour optimiser les itinéraires de livraison urbai
 L'application permet de gérer les demandes de livraison, de les attribuer à différents livreurs et de calculer l'itinéraire optimal, en tenant compte des délais de collecte et de livraison et d'une vitesse constante de 15 km/h. Les itinéraires sont optimisés pour réduire le temps total de retour à l’entrepôt. L'utilisateur peut visualiser les itinéraires sur une carte interactive et a la possibilité de sauvegarder ou de restaurer les itinéraires planifiés. 
 
 ## Exécution
-Pour exécuter le projet Angular, suivez les étapes suivantes :
+Pour exécuter le projet React, suivez les étapes suivantes :
 
 1. **Installer les dépendances**  
-   Assurez-vous d’avoir Node.js et npm installés. Dans le répertoire du projet, exécutez :
+   Assurez-vous d’avoir npm installés. Dans le répertoire du projet, exécutez :
    ```sh
    npm install 
    ```
-3. **Démarrer le serveur de développement**
+2. **Démarrer le serveur de développement**
   Après l’installation des dépendances, lancez l'application en mode développement avec :
    ```sh
    npm start
    ```
+   Accédez ensuite à l'application via http://localhost:3000 dans votre navigateur.
 
 Ces pas vous permettront de lancer le projet.
 
