@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-// import "./style/App.css";
 import {
   ThemeProvider,
   StyledEngineProvider,

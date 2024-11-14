@@ -82,7 +82,6 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     onChangementItineraires,
     itineraireSelectionne,
     onSelectionItineraire,
-    isTourneeCalculee,
     adressesLivraisonsAjoutees,
     adressesLivraisonsXml,
     setAdressesLivraisonsAjoutees,
@@ -92,49 +91,16 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     zoomerVersPoint,
 }) => {
     const [dialogueOuvert, setDialogueOuvert] = useState(false);
-    const [livraisonSelectionnee, setLivraisonSelectionnee] = useState<any>(null);
+    const [livraisonSelectionnee] = useState<any>(null);
     const [coursierSelectionne, setCoursierSelectionne] = useState<number>(0);
     const [historique, setHistorique] = useState<Itineraire[][]>([itineraires]);
     const [estModifie, setEstModifie] = useState(false);
-    const [retourEnCours, setRetourEnCours] = useState(false);
     const [historiqueAnnule, setHistoriqueAnnule] = useState<Itineraire[][]>([]);
     const couleursItineraires = ['#FF0000', '#0000FF', '#808080', '#DE2AEE', '#008000'];
-
-
-    //l'objet itinéraire est une liste de livraisons par coursier : itinéraire = [livraisonPourCoursier1, livraisonPourCoursier2, ...]
-    //les livraisonsPourCoursier sont des objets avec les propriétés : cheminIntersections, livraisons
-    //cheminIntersections est un tableau d'intersection qui correspond au chemin du coursier
-    //livraisons est un objet qui contient le numéro du coursier (pas forcément utile car on peut le retrouver avec l'index de l'itinéraire) 
-    //l'entrepot et l'heure de départ puis la listes des livraisons (= les intersections sur lesquelles le coursier doit s'arreter)
-    //livraisons est un tableau de livraison
-
-    //la structure n'est clairement pas optimale mais elle était en lien avec ce qu'il se passait dans le backend
-    //vu que thomas vas changer le backend, il risque de falloir modifier ce code
-
-
-    // const deplacerLivraison = (livraison: PointLivraison, indexSourceCoursier: number, indexDestinationCoursier: number) => {
-    //     const nouveauxItineraires = [...itineraires];
-
-    //     // Retirer la livraison de son itinéraire actuel
-    //     const sourceLivraisons = nouveauxItineraires[indexSourceCoursier].livraisons.livraisons;
-    //     const livraisonIndex = sourceLivraisons.findIndex(l => l.intersection.id === livraison.intersection.id);
-    //     sourceLivraisons.splice(livraisonIndex, 1);
-
-    //     // Ajouter la livraison au nouvel itinéraire
-    //     nouveauxItineraires[indexDestinationCoursier].livraisons.livraisons.push(livraison);
-
-    //     mettreAJourItineraires(nouveauxItineraires);
-    // };
 
     const genererFichesRoutes = () => {
         console.log("genererFichesRoutes")
     }
-
-    const gererModificationLivraison = (livraison: PointLivraison, indexCoursier: number) => {
-        setLivraisonSelectionnee({ ...livraison, indexCoursier });
-        setCoursierSelectionne(indexCoursier);
-        setDialogueOuvert(true);
-    };
 
     const sauvegarderModification = () => {
         const nouveauxItineraires = [...itineraires];
@@ -193,49 +159,28 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
         if (historique.length > 0) {
             const newHistory = [...historique];
             const actionAnnulee = newHistory.pop()!; // L'action qu'on annule
-            // const previousState = newHistory[newHistory.length - 1];
             const previousState = deepCopy(itineraires);
             console.log("je push sur annule : ", deepCopy(previousState))
             setHistoriqueAnnule([...historiqueAnnule, deepCopy(previousState)]); // On la sauvegarde
             setHistorique(newHistory);
             onChangementItineraires(deepCopy(actionAnnulee));
-            // console.log("histotique était :", historique);
-            // console.log("histotique devient :", newHistory);
-            // console.log("histotique pop :", deepCopy(actionAnnulee));
             setEstModifie(true);
         }
     };
 
     const retablirDerniereAction = () => {
-        // setRetourEnCours(true);
-        console.log("histo annule avant : ",historiqueAnnule)
         if (historiqueAnnule.length > 0) {
             setHistorique([...historique, itineraires]);
             const newHistoriqueAnnule = [...historiqueAnnule];
             const actionARetablir = newHistoriqueAnnule.pop()!;
             setHistoriqueAnnule(newHistoriqueAnnule);
-            console.log("annule push",actionARetablir)
-            // mettreAJourItineraires(deepCopy(actionARetablir))
             onChangementItineraires(deepCopy(actionARetablir));
             setEstModifie(true);
         }
     };
 
-    const mettreAJourItineraires = (nouveauxItineraires: Itineraire[]) => {
-        // const deepCopyItineraires = deepCopy(itineraires);
-        // console.log("Je push sur l'historique :", deepCopyItineraires);
-        // console.log("Historique mis à jour :", [...historique, deepCopyItineraires]);
-        // setHistorique([...historique, deepCopyItineraires]);
-        
-        // setEstModifie(true);
-        // setHistoriqueAnnule([]);
-        // // onChangementItineraires(nouveauxItineraires);
-    };
-
     const avantMiseAJourItineraires = () => {
         const deepCopyItineraires = deepCopy(itineraires);
-        console.log("Je push sur l'historique :", deepCopyItineraires);
-        console.log("Historique mis à jour :", [...historique, deepCopyItineraires]);
         setHistorique([...historique, deepCopyItineraires]);
         
         setEstModifie(true);
@@ -243,7 +188,6 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     }
 
     const miseAJourPlusCourtCheminAPI = (nouveauxItineraires = itineraires) => {
-        console.log("je met a jour", nouveauxItineraires)
         const itinerairesOrdonnes = {
             livraisons: nouveauxItineraires.map(itineraire => ({
                 cheminIntersections: itineraire.cheminIntersections || [],
@@ -306,7 +250,6 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
         }
 
         setLivraisonAjouteePourCoursier(livraisonAjouteePourCoursier);
-        
     }
     
     useEffect(() => {
@@ -336,6 +279,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
             onChangementItineraires(nouveauxItineraires);
             miseAJourPlusCourtCheminAPI();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [livraisonAjouteePourCoursier]);
 
     useEffect(() => {
@@ -373,6 +317,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
             return [...adressesExistantes, ...nouvellesAdresses];
         });
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [itineraires])
         
     const gererClicLivraison = (livraison: any) => {

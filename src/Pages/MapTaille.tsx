@@ -7,6 +7,7 @@ export default function MapTaille({ isTourneeCalculee }: { isTourneeCalculee: bo
     useEffect(() => {
 
         map.invalidateSize();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isTourneeCalculee]);
     
     return null;
