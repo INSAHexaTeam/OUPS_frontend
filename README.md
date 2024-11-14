@@ -11,6 +11,7 @@ L'application permet de gérer les demandes de livraison, de les attribuer à di
 Pour exécuter le projet React, suivez les étapes suivantes :
 
 1. **Installer les dépendances**  
+
    Assurez-vous d’avoir npm installés. Dans le répertoire du projet, exécutez :
    
    ```sh
@@ -18,6 +19,7 @@ Pour exécuter le projet React, suivez les étapes suivantes :
    ```
    
 3. **Démarrer le serveur de développement**
+
    Après l’installation des dépendances, lancez l'application en mode développement avec :
 
    ```sh
