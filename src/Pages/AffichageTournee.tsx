@@ -16,20 +16,19 @@ const AffichageTournee = () => {
     const { donneesTournee } = location.state;
     const vitesseMoyenneMpm = (15 * 1000) / 60; 
 
-
     return (
         <div id="conteneur-tournee">
             {donneesTournee.map((tournee, index) => {
                 const livraisonsDetails = tournee.livraisons.livraisons.slice(1, -1).map(livraison => ({
                     id: livraison.intersection.id,
                     latitude: livraison.intersection.latitude,
-                    longitude: livraison.intersection.longitude
+                    longitude: livraison.intersection.longitude,
+                    heureArrivee: livraison.heureArrivee // Include heureArrivee here
                 }));
 
                 const lastDeliveryId = livraisonsDetails[livraisonsDetails.length - 1]?.id;
                 let indexLivraisonActuelle = 0;
                 const nombreDeLivraisons = livraisonsDetails.length;
-                const { entrepot } = tournee.livraisons;
                 
                 let livraisonCounter = 1; 
                 let arretCounter = 1; 
@@ -74,13 +73,14 @@ const AffichageTournee = () => {
                                     }
                                 }
 
-                                const isDeliveryPoint = livraisonsDetails.some(livraison => livraison.id === intersection.id);
+                                const isPointLivraison = livraisonsDetails.some(livraison => livraison.id === intersection.id);
+                                const heureArrivee = livraisonsDetails.find(livraison => livraison.id === intersection.id)?.heureArrivee;
 
                                 return (
-                                    <p key={intersection.id} className={isDeliveryPoint ? 'highlight' : ''}>
+                                    <p key={intersection.id} className={isPointLivraison ? 'highlight' : ''}>
                                         {!estDerniereLivraison ? (
                                         <span className="step-number">
-                                            {isDeliveryPoint ? `Livraison ${livraisonCounter - 1} - Arrêt final` : `Livraison ${livraisonCounter} - Arrêt ${arretCounter++}`}
+                                            {isPointLivraison ? `Livraison ${livraisonCounter - 1} - Arrêt final` : `Livraison ${livraisonCounter} - Arrêt ${arretCounter++}`}
                                         </span>
                                         ): null }
                                         <br />
@@ -91,9 +91,9 @@ const AffichageTournee = () => {
                                         </div>
 
                                         {intersection.id === lastDeliveryId ? (
-                                            <>Dernière livraison complétée, retour à l'entrepôt</>
-                                        ) : isDeliveryPoint ? (
-                                            <><br /> Arrivé</>
+                                            <>Dernière livraison complétée, retour à l'entrepôt <br /> {heureArrivee}</>
+                                        ) : isPointLivraison ? (
+                                            <><br /> Arrivé à {heureArrivee}</>
                                         ) : (!estDerniereLivraison && intersection.id !== lastDeliveryId) ? (
                                             <div className="distance-time">
                                                 <span>Distance restante: {distanceALivraison.toFixed(2)} m</span>
