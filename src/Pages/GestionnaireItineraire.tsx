@@ -74,6 +74,7 @@ interface GestionnaireItineraireProps {
     setAdressesLivraisonsXml: (adresses: Intersection[]) => void;
     setLivraisonAjouteePourCoursier: (livraisonAjouteePourCoursier: livraisonAjouteePourCoursier) => void;
     livraisonAjouteePourCoursier: livraisonAjouteePourCoursier;
+    genererFichesRoutes: () => void; 
     zoomerVersPoint: (latitude: number, longitude: number) => void;
 }
 
@@ -88,6 +89,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     setAdressesLivraisonsXml,
     setLivraisonAjouteePourCoursier,
     livraisonAjouteePourCoursier,
+    genererFichesRoutes,
     zoomerVersPoint,
 }) => {
     const [dialogueOuvert, setDialogueOuvert] = useState(false);
@@ -98,9 +100,6 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     const [historiqueAnnule, setHistoriqueAnnule] = useState<Itineraire[][]>([]);
     const couleursItineraires = ['#FF0000', '#0000FF', '#808080', '#DE2AEE', '#008000'];
 
-    const genererFichesRoutes = () => {
-        console.log("genererFichesRoutes")
-    }
 
     const sauvegarderModification = () => {
         const nouveauxItineraires = [...itineraires];
