@@ -12,10 +12,14 @@ Pour exécuter le projet Angular, suivez les étapes suivantes :
 
 1. **Installer les dépendances**  
    Assurez-vous d’avoir Node.js et npm installés. Dans le répertoire du projet, exécutez :
-      npm install
-2. **Démarrer le serveur de développement**
+   ```sh
+   npm install 
+   ```
+3. **Démarrer le serveur de développement**
   Après l’installation des dépendances, lancez l'application en mode développement avec :
-      npm start
+   ```sh
+   npm start
+   ```
 
 Ces pas vous permettront de lancer le projet.
 
