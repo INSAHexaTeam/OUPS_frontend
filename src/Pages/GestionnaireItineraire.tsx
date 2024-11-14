@@ -379,7 +379,6 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
 
                 <Button 
                     onClick={genererFichesRoutes} 
-                    disabled={!estModifie} 
                     variant="contained"
                 >
                     Générer les fiches de routes
