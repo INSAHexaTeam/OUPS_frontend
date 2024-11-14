@@ -242,13 +242,13 @@ export default function Accueil() {
                 chargerPoints(data);
                 toast.success(message);
                 setChargementPlanEnCours(false);
+                setPlanCharge(true);
               }).catch((error) => {
                 toast.error(error);
                 setChargementPlanEnCours(false);
               });
             setActionStackRollback([]);
             setPileUndoRollback([]);
-            setPlanCharge(true);
           } else {
             if (adressesLivraisonsAjoutees.length > 0) {
               setDialogRequetesLivraisonOuvert(true);
@@ -317,8 +317,8 @@ export default function Accueil() {
       setChargemementCalculTournee(false);
       toast.success("Tournée calculée avec succès");
     } catch (error) {
-      console.error("Erreur lors du calcul de la tournée :", error);
-      toast.error("Erreur lors du calcul de la tournée");
+      console.error("Le nombre de coursiers est supérieur au nombre de livraisons :", error);
+      toast.error("Le nombre de coursiers est supérieur au nombre de livraisons");
       setIsTourneeCalculee(false);
       setChargemementCalculTournee(false);
     }
@@ -362,6 +362,7 @@ export default function Accueil() {
               accept=".xml"
               onChange={(event) => gererSelectionFichier(event, true)}
               multiple
+              disabled={chargementPlanEnCours || isTourneeCalculee}
             />
           </Button>
 
@@ -441,7 +442,7 @@ export default function Accueil() {
           <span>Nombre total de requêtes de livraisons : <b>{listesTotalAdressesLivraisons.length}</b></span>
         )}
 
-        {planCharge && (
+        {planCharge &&  !isTourneeCalculee && (
           <Box className="box-buttons" sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <FormControl variant="outlined" size="medium" sx={{ width: '140px' }}>
               <InputLabel>Nombre de coursiers</InputLabel>
@@ -450,8 +451,9 @@ export default function Accueil() {
                 onChange={(e) => setNumCouriers(e.target.value as number)}
                 label="Nombre de coursiers"
                 sx={{ height: '40px' }}
+                disabled={chargemementCalculTournee || isTourneeCalculee}
               >
-                {[1, 2, 3, 4, 5].map((num) => (
+                {Array.from({length: Math.min(Math.max(adressesLivraisonsXml.length + adressesLivraisonsAjoutees.length, 1), 5)}, (_, i) => i + 1).map((num) => (
                   <MenuItem key={num} value={num}>{num}</MenuItem>
                 ))}
               </Select>
@@ -460,7 +462,7 @@ export default function Accueil() {
               variant="contained"
               color="primary"
               onClick={calculTournee}
-              disabled={chargemementCalculTournee}
+              disabled={chargemementCalculTournee || isTourneeCalculee}
               startIcon={chargemementCalculTournee ? <CircularProgress size={20} /> : null}
             >
               Calculer la tournée
