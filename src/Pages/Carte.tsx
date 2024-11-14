@@ -4,7 +4,7 @@ import L from 'leaflet';
 import 'leaflet-polylinedecorator';
 import * as turf from '@turf/turf';
 import { Button } from '@mui/material';
-import { Point, Intersection } from '../Utils/points';
+import { Intersection } from '../Utils/points';
 import 'leaflet/dist/leaflet.css';
 import {Action, itineraire, livraisonAjouteePourCoursier} from "../Utils/types";
 import MapTaille from './MapTaille.tsx';
@@ -149,6 +149,7 @@ const Carte: React.FC<CarteProps> = ({
             });
             setDecorateursFlèches(nouveauxDecorateurs);
         }, 100);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [itineraires, itineraireSelectionne]);
 
 
