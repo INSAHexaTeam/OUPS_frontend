@@ -7,6 +7,19 @@ Cette application est conçue pour optimiser les itinéraires de livraison urbai
 
 L'application permet de gérer les demandes de livraison, de les attribuer à différents livreurs et de calculer l'itinéraire optimal, en tenant compte des délais de collecte et de livraison et d'une vitesse constante de 15 km/h. Les itinéraires sont optimisés pour réduire le temps total de retour à l’entrepôt. L'utilisateur peut visualiser les itinéraires sur une carte interactive et a la possibilité de sauvegarder ou de restaurer les itinéraires planifiés. 
 
+## Exécution
+Pour exécuter le projet Angular, suivez les étapes suivantes :
+
+1. **Installer les dépendances**  
+   Assurez-vous d’avoir Node.js et npm installés. Dans le répertoire du projet, exécutez :
+      npm install
+2. **Démarrer le serveur de développement**
+  Après l’installation des dépendances, lancez l'application en mode développement avec :
+      npm start
+
+Ces pas vous permettront de lancer le projet.
+
+
 ## Algorithme 
 
 L'application représente les différentes intersections de la ville sous forme d'un graphe afin de pouvoir calculer les itinéraires de livraison sous forme de sous-graphiques. Chaque intersection est modélisée comme un nœud et chaque segment de route comme un arc entre deux nœuds.   
