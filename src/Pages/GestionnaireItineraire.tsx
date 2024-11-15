@@ -27,6 +27,7 @@ import {
     ArrowDownward as ArrowDownIcon
 } from '@mui/icons-material';
 import { calculerItineraireOrdonne } from '../Appels_api/calculerItineraireOrdonne.ts';
+import { calculerItineraireOrdonneOpti } from '../Appels_api/calculerItineraireOrdonneOpti.ts';
 import {definirAdressesSelonVoisins} from "../Utils/utils.ts";
 import {Intersection} from "../Utils/points";
 import {livraisonAjouteePourCoursier} from "../Utils/types";
@@ -133,7 +134,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
 
     supprimerDansXmlOuAjoutees(livraison);
     onChangementItineraires(nouveauxItineraires);
-    await miseAJourPlusCourtCheminAPI();
+    await miseAJourPlusCourtCheminAPI(indexCoursier);
     setActionEnCours(false);
   };
 
@@ -202,7 +203,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                     }
                 }))
             };
-            const response = await calculerItineraireOrdonne(itinerairesOrdonnes, coursierId)
+            const response = await calculerItineraireOrdonneOpti(itinerairesOrdonnes, coursierId)
             const nouveauxItineraires = [...itineraires];
             nouveauxItineraires[coursierId] = response.data;
             onChangementItineraires(nouveauxItineraires);
@@ -289,7 +290,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
       itineraireCoursier.livraisons.livraisons.splice(livraisonAjouteePourCoursier.indexLivraison + 1, 0, livraiseAAjouter);
 
       onChangementItineraires(nouveauxItineraires);
-      miseAJourPlusCourtCheminAPI().finally(() => {
+      miseAJourPlusCourtCheminAPI(livraisonAjouteePourCoursier.numeroCoursier).finally(() => {
         setActionEnCours(false);
       });
     }
