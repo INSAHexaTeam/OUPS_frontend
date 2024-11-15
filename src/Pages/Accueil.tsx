@@ -320,7 +320,6 @@ export default function Accueil() {
 
     try {
       setChargemementCalculTournee(true);
-      console.log("livraisons", livraisons)
       const result = await calculerItineraire(livraisons);
       setDonneesTournee(result.data.livraisons);
 
@@ -377,8 +376,6 @@ export default function Accueil() {
               type="file"
               accept=".xml"
               onChange={(event) => gererSelectionFichier(event, true)}
-              multiple
-              disabled={chargementPlanEnCours || isTourneeCalculee}
             />
           </Button>
 
