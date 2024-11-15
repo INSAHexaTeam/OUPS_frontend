@@ -1,5 +1,4 @@
 import React, { useState, useEffect, ChangeEvent, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import '../Styles/Accueil.css';
 import Carte from './Carte.tsx';
 import { Intersection, Itineraire, Point } from '../Utils/points.tsx';
@@ -70,8 +69,6 @@ export default function Accueil() {
 
   const [itineraireSelectionne, setItineraireSelectionne] = useState<number | undefined>(undefined);
 
-  const [donneesTournee, setDonneesTournee] = useState([]);
-  const navigation = useNavigate();
 
   // permet d'ajouter une action à la pile
   const ajoutActionStack = (action: Action) => {
@@ -129,15 +126,6 @@ export default function Accueil() {
     setPileUndoRollback([]);
   }
 
-
-  const genererFichesRoutes = async () => {
-    try {
-      navigation('/export', { state: { donneesTournee } });
-    } catch (error) {
-      console.error("Erreur lors du téléchargement de la tournée:", error);
-      toast.error("Erreur lors du téléchargement de la tournée");
-    }
-  };
 
   useEffect(() => {
     setListesTotalAdressesLivraisons([...adressesLivraisonsAjoutees, ...adressesLivraisonsXml]);
@@ -321,7 +309,6 @@ export default function Accueil() {
     try {
       setChargemementCalculTournee(true);
       const result = await calculerItineraire(livraisons);
-      setDonneesTournee(result.data.livraisons);
 
       const itinerairesFomrmated = result.data.livraisons.map((itineraire, coursierIndex) => {
         itineraire.livraisons.coursier = coursierIndex;
@@ -496,7 +483,6 @@ export default function Accueil() {
             setAdressesLivraisonsXml={setAdressesLivraisonsXml}
             livraisonAjouteePourCoursier={livraisonAjouteePourCoursier}
             setLivraisonAjouteePourCoursier={setLivraisonAjouteePourCoursier}
-            genererFichesRoutes={genererFichesRoutes}
             zoomerVersPoint={zoomToPointRef.current}
           />
         )}
