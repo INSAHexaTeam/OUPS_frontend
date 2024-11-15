@@ -31,6 +31,7 @@ import {definirAdressesSelonVoisins} from "../Utils/utils.ts";
 import {Intersection} from "../Utils/points";
 import {livraisonAjouteePourCoursier} from "../Utils/types";
 import toast, {Toaster} from "react-hot-toast";
+import { useNavigate } from 'react-router-dom';
 
 interface PointLivraison {
     intersection: {
@@ -74,7 +75,6 @@ interface GestionnaireItineraireProps {
     setAdressesLivraisonsXml: (adresses: Intersection[]) => void;
     setLivraisonAjouteePourCoursier: (livraisonAjouteePourCoursier: livraisonAjouteePourCoursier) => void;
     livraisonAjouteePourCoursier: livraisonAjouteePourCoursier;
-    genererFichesRoutes: () => void; 
     zoomerVersPoint: (latitude: number, longitude: number) => void;
 }
 
@@ -89,7 +89,6 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     setAdressesLivraisonsXml,
     setLivraisonAjouteePourCoursier,
     livraisonAjouteePourCoursier,
-    genererFichesRoutes,
     zoomerVersPoint,
 }) => {
   const [dialogueOuvert, setDialogueOuvert] = useState(false);
@@ -100,7 +99,8 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
   const [historiqueAnnule, setHistoriqueAnnule] = useState<Itineraire[][]>([]);
   const [actionEnCours, setActionEnCours] = useState(false);
   const couleursItineraires = ['#FF0000', '#0000FF', '#808080', '#DE2AEE', '#008000'];
-
+  const [donneesTournee, setDonneesTournee] = useState([]);
+  const navigation = useNavigate();
 
     const sauvegarderModification = () => {
         const nouveauxItineraires = [...itineraires];
@@ -114,7 +114,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
         // Ajouter la livraison au nouvel itinéraire
         const newItineraire = nouveauxItineraires[coursierSelectionne];
         newItineraire.livraisons.livraisons.push(livraisonSelectionnee);
-
+        setDonneesTournee(nouveauxItineraires);
         onChangementItineraires(nouveauxItineraires);
         setDialogueOuvert(false);
     };
@@ -133,6 +133,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
 
     supprimerDansXmlOuAjoutees(livraison);
     onChangementItineraires(nouveauxItineraires);
+    setDonneesTournee(nouveauxItineraires);
     await miseAJourPlusCourtCheminAPI();
     setActionEnCours(false);
   };
@@ -161,6 +162,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
       setHistoriqueAnnule([...historiqueAnnule, deepCopy(previousState)]);
       setHistorique(newHistory);
       onChangementItineraires(deepCopy(actionAnnulee));
+      setDonneesTournee(nouveauxItineraires);
       setEstModifie(true);
     }
   };
@@ -172,6 +174,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
       const actionARetablir = newHistoriqueAnnule.pop()!;
       setHistoriqueAnnule(newHistoriqueAnnule);
       onChangementItineraires(deepCopy(actionARetablir));
+      setDonneesTournee(nouveauxItineraires);
       setEstModifie(true);
     }
   };
@@ -206,6 +209,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
             const nouveauxItineraires = [...itineraires];
             nouveauxItineraires[coursierId] = response.data;
             onChangementItineraires(nouveauxItineraires);
+            setDonneesTournee(nouveauxItineraires);
         } catch (error) {
             console.error("Erreur lors du calcul de l'itinéraire :", error);
         } finally {
@@ -289,6 +293,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
       itineraireCoursier.livraisons.livraisons.splice(livraisonAjouteePourCoursier.indexLivraison + 1, 0, livraiseAAjouter);
 
       onChangementItineraires(nouveauxItineraires);
+      setDonneesTournee(nouveauxItineraires);
       miseAJourPlusCourtCheminAPI().finally(() => {
         setActionEnCours(false);
       });
