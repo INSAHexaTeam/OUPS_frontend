@@ -16,15 +16,21 @@ const AffichageTournee = () => {
     const { donneesTournee } = location.state;
     const vitesseMoyenneMpm = (15 * 1000) / 60; 
 
+    let displayedCourierIndex = 1;
     return (
         <div id="conteneur-tournee">
             {donneesTournee.map((tournee, index) => {
-                const livraisonsDetails = tournee.livraisons.livraisons.slice(1, -1).map(livraison => ({
-                    id: livraison.intersection.id,
-                    latitude: livraison.intersection.latitude,
-                    longitude: livraison.intersection.longitude,
-                    heureArrivee: livraison.heureArrivee // Include heureArrivee here
-                }));
+                const livraisonsDetails = tournee.livraisons.livraisons
+                    ? tournee.livraisons.livraisons.slice(1, -1).map(livraison => ({
+                        id: livraison.intersection.id,
+                        latitude: livraison.intersection.latitude,
+                        longitude: livraison.intersection.longitude,
+                        heureArrivee: livraison.heureArrivee 
+                    }))
+                    : [];
+
+                // Skip si il y'a pas de livraisons pour un livreur 
+                if (livraisonsDetails.length === 0) return null;
 
                 const lastDeliveryId = livraisonsDetails[livraisonsDetails.length - 1]?.id;
                 let indexLivraisonActuelle = 0;
@@ -33,9 +39,9 @@ const AffichageTournee = () => {
                 let livraisonCounter = 1; 
                 let arretCounter = 1; 
 
-                return (
+                const renderedComponent = (
                     <div key={index} className="bloc-tournee">
-                        <h3>Coursier {index + 1}</h3>
+                        <h3>Coursier {displayedCourierIndex++}</h3> 
                         <div className="chemin-intersections">
                             <h4>Itinéraire :</h4>
                             {tournee.cheminIntersections.map((intersection, idx, array) => {
@@ -79,10 +85,10 @@ const AffichageTournee = () => {
                                 return (
                                     <p key={intersection.id} className={isPointLivraison ? 'highlight' : ''}>
                                         {!estDerniereLivraison ? (
-                                        <span className="step-number">
-                                            {isPointLivraison ? `Livraison ${livraisonCounter - 1} - Arrêt final` : `Livraison ${livraisonCounter} - Arrêt ${arretCounter++}`}
-                                        </span>
-                                        ): null }
+                                            <span className="step-number">
+                                                {isPointLivraison ? `Livraison ${livraisonCounter - 1} - Arrêt final` : `Livraison ${livraisonCounter} - Arrêt ${arretCounter++}`}
+                                            </span>
+                                        ) : null }
                                         <br />
                                         <span className="label">Nom Rue:</span> <span className="value">{intersection.adresse || intersection.voisins[0].nomRue}</span>
                                         <div className="distance-time">
@@ -106,6 +112,8 @@ const AffichageTournee = () => {
                         </div>
                     </div>
                 );
+
+                return renderedComponent;
             })}
         </div>
     );
