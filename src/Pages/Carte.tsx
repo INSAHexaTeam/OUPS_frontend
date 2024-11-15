@@ -148,7 +148,7 @@ const Carte: React.FC<CarteProps> = ({
                 return addArrowsToPolyline(positions, isSelected);
             });
             setDecorateursFlèches(nouveauxDecorateurs);
-        }, 100);
+        }, 0);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [itineraires, itineraireSelectionne]);
 
