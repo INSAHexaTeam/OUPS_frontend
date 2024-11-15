@@ -320,6 +320,7 @@ export default function Accueil() {
 
     try {
       setChargemementCalculTournee(true);
+      console.log("livraisons", livraisons)
       const result = await calculerItineraire(livraisons);
       setDonneesTournee(result.data.livraisons);
 
@@ -457,7 +458,7 @@ export default function Accueil() {
           <span>Nombre total de requêtes de livraisons : <b>{listesTotalAdressesLivraisons.length}</b></span>
         )}
 
-        {planCharge &&  !isTourneeCalculee && (
+        {planCharge && (
           <Box className="box-buttons" sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <FormControl variant="outlined" size="medium" sx={{ width: '140px' }}>
               <InputLabel>Nombre de coursiers</InputLabel>
@@ -466,9 +467,9 @@ export default function Accueil() {
                 onChange={(e) => setNumCouriers(e.target.value as number)}
                 label="Nombre de coursiers"
                 sx={{ height: '40px' }}
-                disabled={chargemementCalculTournee || isTourneeCalculee}
+                disabled={chargemementCalculTournee}
               >
-                {Array.from({length: Math.min(Math.max(adressesLivraisonsXml.length + adressesLivraisonsAjoutees.length, 1), 5)}, (_, i) => i + 1).map((num) => (
+                {Array.from({ length: Math.min(Math.max(adressesLivraisonsXml.length + adressesLivraisonsAjoutees.length, 1), 5) }, (_, i) => i + 1).map((num) => (
                   <MenuItem key={num} value={num}>{num}</MenuItem>
                 ))}
               </Select>
@@ -477,7 +478,7 @@ export default function Accueil() {
               variant="contained"
               color="primary"
               onClick={calculTournee}
-              disabled={chargemementCalculTournee || isTourneeCalculee}
+              disabled={chargemementCalculTournee}
               startIcon={chargemementCalculTournee ? <CircularProgress size={20} /> : null}
             >
               Calculer la tournée
