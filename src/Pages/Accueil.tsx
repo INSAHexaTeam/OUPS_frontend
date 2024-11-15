@@ -23,7 +23,7 @@ import { enregistrerRequetesLivraisons } from "../Appels_api/enregistrerRequetes
 import '../Styles/Accueil.css';
 import { calculerItineraire } from "../Appels_api/calculerItineraire.ts";
 import { styled } from "@mui/material/styles";
-import ItineraireManager from "./GestionnaireItineraire.tsx";
+import GestionnaireItineraire from "./GestionnaireItineraire.tsx";
 import { Action, itineraire, livraisonAjouteePourCoursier } from "../Utils/types";
 import { definirAdressesSelonVoisins } from "../Utils/utils.ts";
 import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded';
@@ -66,8 +66,9 @@ export default function Accueil() {
   const [dialogRequetesLivraisonOuvert, setDialogRequetesLivraisonOuvert] = useState(false);
   const [chargementPlanEnCours, setChargementPlanEnCours] = useState(false);
   const [chargemementCalculTournee, setChargemementCalculTournee] = useState(false);
-  const [donneesTournee, setDonneesTournee] = useState<any>([]);
+
   const [itineraireSelectionne, setItineraireSelectionne] = useState<number | undefined>(undefined);
+  const [donneesTournee, setDonneesTournee] = useState([]);
 
   // permet d'ajouter une action à la pile
   const ajoutActionStack = (action: Action) => {
@@ -271,15 +272,6 @@ export default function Accueil() {
     }
   };
 
-  const genererFichesRoutes = async () => {
-    try {
-      navigation('/export', { state: { donneesTournee } });
-    } catch (error) {
-      console.error("Erreur lors du téléchargement de la tournée:", error);
-      toast.error("Erreur lors du téléchargement de la tournée");
-    }
-  };
-
   const gererSelectionFichier = (event: ChangeEvent<HTMLInputElement>, isCarte: boolean = false) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -317,8 +309,8 @@ export default function Accueil() {
     try {
       setChargemementCalculTournee(true);
       const result = await calculerItineraire(livraisons);
-      setDonneesTournee(result.data.livraisons);
 
+      setDonneesTournee(result.data.livraisons);
       const itinerairesFomrmated = result.data.livraisons.map((itineraire, coursierIndex) => {
         itineraire.livraisons.coursier = coursierIndex;
         return itineraire;
@@ -480,7 +472,7 @@ export default function Accueil() {
           </Box>
         )}
         {isTourneeCalculee && (
-          <ItineraireManager
+          <GestionnaireItineraire
             itineraires={itineraires}
             onChangementItineraires={gereLesChangementsdItineraire}
             itineraireSelectionne={itineraireSelectionne}
@@ -492,7 +484,8 @@ export default function Accueil() {
             setAdressesLivraisonsXml={setAdressesLivraisonsXml}
             livraisonAjouteePourCoursier={livraisonAjouteePourCoursier}
             setLivraisonAjouteePourCoursier={setLivraisonAjouteePourCoursier}
-            genererFichesRoutes={genererFichesRoutes}
+            setDonneesTournee={setDonneesTournee}
+            donneesTournee={donneesTournee}
             zoomerVersPoint={zoomToPointRef.current}
           />
         )}
