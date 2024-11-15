@@ -1,96 +1,98 @@
-// ItineraireManager.tsx
 import React, { useState, useEffect } from 'react';
 import {
-    Card,
-    CardContent,
-    Typography,
-    List,
-    ListItem,
-    IconButton,
-    Box,
-    Button,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel
+  Card,
+  CardContent,
+  Typography,
+  List,
+  ListItem,
+  IconButton,
+  Box,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel
 } from '@mui/material';
 import {
-    Delete as DeleteIcon,
-    Undo as UndoIcon,
-    Redo as RedoIcon,
-    Add as AddIcon,
-    ArrowUpward as ArrowUpIcon,
-    ArrowDownward as ArrowDownIcon
+  Delete as DeleteIcon,
+  Undo as UndoIcon,
+  Redo as RedoIcon,
+  Add as AddIcon,
+  ArrowUpward as ArrowUpIcon,
+  ArrowDownward as ArrowDownIcon
 } from '@mui/icons-material';
 import { calculerItineraireOrdonne } from '../Appels_api/calculerItineraireOrdonne.ts';
-import { calculerItineraireOrdonneOpti } from '../Appels_api/calculerItineraireOrdonneOpti.ts';
-import {definirAdressesSelonVoisins} from "../Utils/utils.ts";
-import {Intersection} from "../Utils/points";
-import {livraisonAjouteePourCoursier} from "../Utils/types";
-import toast, {Toaster} from "react-hot-toast";
+import { definirAdressesSelonVoisins } from "../Utils/utils.ts";
+import { Intersection } from "../Utils/points";
+import { livraisonAjouteePourCoursier } from "../Utils/types";
+import toast, { Toaster } from "react-hot-toast";
 import { useNavigate } from 'react-router-dom';
 
+
 interface PointLivraison {
-    intersection: {
+  intersection: {
+    id: number;
+    latitude: number;
+    longitude: number;
+    adresse?: string;
+  };
+  estUneLivraison: boolean;
+}
+
+interface Itineraire {
+  livraisons: {
+    entrepot: {
+      intersection: {
         id: number;
         latitude: number;
         longitude: number;
         adresse?: string;
+      };
     };
-    estUneLivraison: boolean;
+    livraisons: PointLivraison[];
+    coursier?: number;
+  };
+  cheminIntersections: any[];
 }
 
-interface Itineraire {
-    livraisons: {
-        entrepot: {
-            intersection: {
-                id: number;
-                latitude: number;
-                longitude: number;
-                adresse?: string;
-            };
-        };
-        livraisons: PointLivraison[];
-        coursier?: number;
-    };
-    cheminIntersections: any[];
-}
-
-// Ajouter cette fonction avant le composant ItineraireManager
 const deepCopy = <T,>(obj: T): T => {
-    return JSON.parse(JSON.stringify(obj));
+  return JSON.parse(JSON.stringify(obj));
 };
 
 interface GestionnaireItineraireProps {
-    itineraires: any[];
-    onChangementItineraires: (nouveauxItineraires: any[]) => void;
-    itineraireSelectionne?: number;
-    onSelectionItineraire: (index: number | undefined) => void;
-    adressesLivraisonsAjoutees: Intersection[];
-    adressesLivraisonsXml: Intersection[];
-    setAdressesLivraisonsAjoutees: (adresses: Intersection[]) => void;
-    setAdressesLivraisonsXml: (adresses: Intersection[]) => void;
-    setLivraisonAjouteePourCoursier: (livraisonAjouteePourCoursier: livraisonAjouteePourCoursier) => void;
-    livraisonAjouteePourCoursier: livraisonAjouteePourCoursier;
-    zoomerVersPoint: (latitude: number, longitude: number) => void;
+  itineraires: any[];
+  onChangementItineraires: (nouveauxItineraires: any[]) => void;
+  itineraireSelectionne?: number;
+  onSelectionItineraire: (index: number | undefined) => void;
+  adressesLivraisonsAjoutees: Intersection[];
+  adressesLivraisonsXml: Intersection[];
+  setAdressesLivraisonsAjoutees: (adresses: Intersection[]) => void;
+  setAdressesLivraisonsXml: (adresses: Intersection[]) => void;
+  setLivraisonAjouteePourCoursier: (livraisonAjouteePourCoursier: livraisonAjouteePourCoursier) => void;
+  livraisonAjouteePourCoursier: livraisonAjouteePourCoursier;
+  zoomerVersPoint: (latitude: number, longitude: number) => void;
+  setDonneesTournee: (DonneesTournee :any) => void;
+  donneesTournee: any;
 }
 
-const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({ 
-    itineraires, 
-    onChangementItineraires,
-    itineraireSelectionne,
-    onSelectionItineraire,
-    adressesLivraisonsAjoutees,
-    adressesLivraisonsXml,
-    setAdressesLivraisonsAjoutees,
-    setAdressesLivraisonsXml,
-    setLivraisonAjouteePourCoursier,
-    livraisonAjouteePourCoursier,
-    zoomerVersPoint,
+const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
+  itineraires,
+  onChangementItineraires,
+  itineraireSelectionne,
+  onSelectionItineraire,
+  adressesLivraisonsAjoutees,
+  adressesLivraisonsXml,
+  setAdressesLivraisonsAjoutees,
+  setAdressesLivraisonsXml,
+  setLivraisonAjouteePourCoursier,
+  livraisonAjouteePourCoursier,
+  setDonneesTournee,
+  donneesTournee,
+  zoomerVersPoint,
 }) => {
   const [dialogueOuvert, setDialogueOuvert] = useState(false);
   const [livraisonSelectionnee] = useState<any>(null);
@@ -99,26 +101,27 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
   const [estModifie, setEstModifie] = useState(false);
   const [historiqueAnnule, setHistoriqueAnnule] = useState<Itineraire[][]>([]);
   const [actionEnCours, setActionEnCours] = useState(false);
-  const couleursItineraires = ['#FF0000', '#0000FF', '#808080', '#DE2AEE', '#008000'];
-  const [donneesTournee, setDonneesTournee] = useState([]);
   const navigation = useNavigate();
+  const couleursItineraires = ['#FF0000', '#0000FF', '#808080', '#DE2AEE', '#008000'];
 
-    const sauvegarderModification = () => {
-        const nouveauxItineraires = [...itineraires];
 
-        // Retirer la livraison de son itinéraire actuel
-        const oldItineraire = nouveauxItineraires[livraisonSelectionnee.indexCoursier];
-        oldItineraire.livraisons.livraisons = oldItineraire.livraisons.livraisons.filter(
-            l => l.intersection.id !== livraisonSelectionnee.intersection.id
-        );
-        
-        // Ajouter la livraison au nouvel itinéraire
-        const newItineraire = nouveauxItineraires[coursierSelectionne];
-        newItineraire.livraisons.livraisons.push(livraisonSelectionnee);
-        setDonneesTournee(nouveauxItineraires);
-        onChangementItineraires(nouveauxItineraires);
-        setDialogueOuvert(false);
-    };
+  const sauvegarderModification = () => {
+    const nouveauxItineraires = [...itineraires];
+
+    // Retirer la livraison de son itinéraire actuel
+    const oldItineraire = nouveauxItineraires[livraisonSelectionnee.indexCoursier];
+    oldItineraire.livraisons.livraisons = oldItineraire.livraisons.livraisons.filter(
+      l => l.intersection.id !== livraisonSelectionnee.intersection.id
+    );
+
+    // Ajouter la livraison au nouvel itinéraire
+    const newItineraire = nouveauxItineraires[coursierSelectionne];
+    newItineraire.livraisons.livraisons.push(livraisonSelectionnee);
+
+    onChangementItineraires(nouveauxItineraires);
+    setDonneesTournee(nouveauxItineraires);
+    setDialogueOuvert(false);
+  };
 
   const supprimerLivraison = async (livraison: PointLivraison, indexCoursier: number) => {
     setActionEnCours(true);
@@ -135,8 +138,19 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     supprimerDansXmlOuAjoutees(livraison);
     onChangementItineraires(nouveauxItineraires);
     setDonneesTournee(nouveauxItineraires);
-    await miseAJourPlusCourtCheminAPI(indexCoursier);
+    await miseAJourPlusCourtCheminAPI();
     setActionEnCours(false);
+  };
+
+
+
+  const genererFichesRoutes = async () => {
+    try {
+      navigation('/export', { state: { donneesTournee } });
+    } catch (error) {
+      console.error("Erreur lors du téléchargement de la tournée:", error);
+      toast.error("Erreur lors du téléchargement de la tournée");
+    }
   };
 
   const supprimerDansXmlOuAjoutees = (livraison: PointLivraison) => {
@@ -155,17 +169,6 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     }
   }
 
-
-  const genererFichesRoutes = async () => {
-    try {
-      navigation('/export', { state: { donneesTournee } });
-    } catch (error) {
-      console.error("Erreur lors du téléchargement de la tournée:", error);
-      toast.error("Erreur lors du téléchargement de la tournée");
-    }
-  };
-
-      
   const annulerDerniereAction = () => {
     if (historique.length > 0) {
       const newHistory = [...historique];
@@ -198,48 +201,54 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     setHistoriqueAnnule([]);
   }
 
-    const miseAJourPlusCourtCheminAPI = async (coursierId:number, envoieItineraire = itineraires) => {
-        try {
-            const itinerairesOrdonnes = {
-                livraisons: envoieItineraire.map(itineraire => ({
-                    cheminIntersections: itineraire.cheminIntersections || [],
-                    livraisons: {
-                        entrepot: {
-                            heureDepart: "08:00:00",
-                            intersection: itineraire.livraisons.entrepot.intersection
-                        },
-                        livraisons: [
-                            ...itineraire.livraisons.livraisons.map(livraison => ({
-                                intersection: livraison.intersection
-                            }))
-                        ],
-                        coursier: null
-                    }
-                }))
-            };
-            const response = await calculerItineraireOrdonneOpti(itinerairesOrdonnes, coursierId)
-            const nouveauxItineraires = [...itineraires];
-            nouveauxItineraires[coursierId] = response.data;
-            onChangementItineraires(nouveauxItineraires);
-            setDonneesTournee(nouveauxItineraires);
-        } catch (error) {
-            console.error("Erreur lors du calcul de l'itinéraire :", error);
-        } finally {
-            setEstModifie(false);
-        }
-    };
+  const miseAJourPlusCourtCheminAPI = async (nouveauxItineraires = itineraires) => {
+    try {
+      const itinerairesOrdonnes = {
+        livraisons: nouveauxItineraires.map(itineraire => ({
+          cheminIntersections: itineraire.cheminIntersections || [],
+          livraisons: {
+            entrepot: {
+              heureDepart: "08:00:00",
+              intersection: itineraire.livraisons.entrepot.intersection
+            },
+            livraisons: [
+              ...itineraire.livraisons.livraisons.map(livraison => ({
+                intersection: livraison.intersection
+              }))
+            ],
+            coursier: null
+          }
+        }))
+      };
+      const response = await calculerItineraireOrdonne(itinerairesOrdonnes);
+      const itineraires: Itineraire[] = response.data.livraisons.map((itineraire: any) => ({
+        livraisons: {
+          entrepot: itineraire.livraisons.entrepot,
+          livraisons: itineraire.livraisons.livraisons,
+          coursier: itineraire.livraisons.coursier
+        },
+        cheminIntersections: itineraire.cheminIntersections
+      }));
+      onChangementItineraires(itineraires);
+      setDonneesTournee(itineraires);
+    } catch (error) {
+      console.error("Erreur lors du calcul de l'itinéraire :", error);
+    } finally {
+      setEstModifie(false);
+    }
+  };
 
-    const gererSelectionItineraire = (index: number) => {
-        if (itineraireSelectionne === index) {
-            onSelectionItineraire(undefined);
+  const gererSelectionItineraire = (index: number) => {
+    if (itineraireSelectionne === index) {
+      onSelectionItineraire(undefined);
     } else {
       onSelectionItineraire(index);
     }
   };
 
   const ajouterLivraison = (indexCoursier: number, indexLivraison: number) => {
-      setActionEnCours(true);
-      avantMiseAJourItineraires();
+    setActionEnCours(true);
+    avantMiseAJourItineraires();
 
     toast(<p>Cliquez sur une intersection de la carte pour ajouter une livraison au <b>coursier n°{indexCoursier + 1}</b></p>, {
       icon: '📍',
@@ -305,8 +314,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
       itineraireCoursier.livraisons.livraisons.splice(livraisonAjouteePourCoursier.indexLivraison + 1, 0, livraiseAAjouter);
 
       onChangementItineraires(nouveauxItineraires);
-      setDonneesTournee(nouveauxItineraires);
-      miseAJourPlusCourtCheminAPI(livraisonAjouteePourCoursier.numeroCoursier).finally(() => {
+      miseAJourPlusCourtCheminAPI().finally(() => {
         setActionEnCours(false);
       });
     }
