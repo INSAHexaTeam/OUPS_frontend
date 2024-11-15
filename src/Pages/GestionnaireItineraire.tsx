@@ -154,6 +154,17 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     }
   }
 
+
+  const genererFichesRoutes = async () => {
+    try {
+      navigation('/export', { state: { donneesTournee } });
+    } catch (error) {
+      console.error("Erreur lors du téléchargement de la tournée:", error);
+      toast.error("Erreur lors du téléchargement de la tournée");
+    }
+  };
+
+      
   const annulerDerniereAction = () => {
     if (historique.length > 0) {
       const newHistory = [...historique];
