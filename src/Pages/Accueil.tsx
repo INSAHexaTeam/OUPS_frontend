@@ -66,7 +66,7 @@ export default function Accueil() {
   const [dialogRequetesLivraisonOuvert, setDialogRequetesLivraisonOuvert] = useState(false);
   const [chargementPlanEnCours, setChargementPlanEnCours] = useState(false);
   const [chargemementCalculTournee, setChargemementCalculTournee] = useState(false);
-
+  const [donneesTournee, setDonneesTournee] = useState<any>([]);
   const [itineraireSelectionne, setItineraireSelectionne] = useState<number | undefined>(undefined);
 
   // permet d'ajouter une action à la pile
@@ -268,6 +268,15 @@ export default function Accueil() {
       reader.readAsText(file);
     } else {
       setErreurMessage('Veuillez télécharger un fichier XML valide');
+    }
+  };
+
+  const genererFichesRoutes = async () => {
+    try {
+      navigation('/export', { state: { donneesTournee } });
+    } catch (error) {
+      console.error("Erreur lors du téléchargement de la tournée:", error);
+      toast.error("Erreur lors du téléchargement de la tournée");
     }
   };
 

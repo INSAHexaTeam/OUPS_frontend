@@ -111,7 +111,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
         oldItineraire.livraisons.livraisons = oldItineraire.livraisons.livraisons.filter(
             l => l.intersection.id !== livraisonSelectionnee.intersection.id
         );
-
+        
         // Ajouter la livraison au nouvel itinéraire
         const newItineraire = nouveauxItineraires[coursierSelectionne];
         newItineraire.livraisons.livraisons.push(livraisonSelectionnee);
@@ -174,7 +174,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
       setHistoriqueAnnule([...historiqueAnnule, deepCopy(previousState)]);
       setHistorique(newHistory);
       onChangementItineraires(deepCopy(actionAnnulee));
-      setDonneesTournee(nouveauxItineraires);
+      setDonneesTournee(deepCopy(actionAnnulee));
       setEstModifie(true);
     }
   };
@@ -186,7 +186,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
       const actionARetablir = newHistoriqueAnnule.pop()!;
       setHistoriqueAnnule(newHistoriqueAnnule);
       onChangementItineraires(deepCopy(actionARetablir));
-      setDonneesTournee(nouveauxItineraires);
+      setDonneesTournee(deepCopy(actionARetablir));
       setEstModifie(true);
     }
   };
