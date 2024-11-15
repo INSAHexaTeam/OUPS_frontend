@@ -70,9 +70,6 @@ export default function Accueil() {
 
   const [itineraireSelectionne, setItineraireSelectionne] = useState<number | undefined>(undefined);
 
-  const [donneesTournee, setDonneesTournee] = useState([]);
-  const navigation = useNavigate();
-
   // permet d'ajouter une action à la pile
   const ajoutActionStack = (action: Action) => {
     setActionStackRollback(prev => [...prev, action]);
@@ -129,15 +126,6 @@ export default function Accueil() {
     setPileUndoRollback([]);
   }
 
-
-  const genererFichesRoutes = async () => {
-    try {
-      navigation('/export', { state: { donneesTournee } });
-    } catch (error) {
-      console.error("Erreur lors du téléchargement de la tournée:", error);
-      toast.error("Erreur lors du téléchargement de la tournée");
-    }
-  };
 
   useEffect(() => {
     setListesTotalAdressesLivraisons([...adressesLivraisonsAjoutees, ...adressesLivraisonsXml]);
