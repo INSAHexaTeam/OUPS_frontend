@@ -18,7 +18,7 @@ Pour exécuter le projet React, suivez les étapes suivantes :
    npm install 
    ```
    
-3. **Démarrer le serveur de développement**
+3. **Exécuter l'application**
 
    Après l’installation des dépendances, lancez l'application en mode développement avec :
 
