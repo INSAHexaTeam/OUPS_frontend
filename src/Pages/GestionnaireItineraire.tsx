@@ -1,4 +1,3 @@
-// ItineraireManager.tsx
 import React, { useState, useEffect } from 'react';
 import {
   Card,
@@ -58,7 +57,6 @@ interface Itineraire {
   cheminIntersections: any[];
 }
 
-// Ajouter cette fonction avant le composant ItineraireManager
 const deepCopy = <T,>(obj: T): T => {
   return JSON.parse(JSON.stringify(obj));
 };
@@ -98,8 +96,8 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
   const [historique, setHistorique] = useState<Itineraire[][]>([itineraires]);
   const [estModifie, setEstModifie] = useState(false);
   const [historiqueAnnule, setHistoriqueAnnule] = useState<Itineraire[][]>([]);
+  const [actionEnCours, setActionEnCours] = useState(false);
   const couleursItineraires = ['#FF0000', '#0000FF', '#808080', '#DE2AEE', '#008000'];
-
 
   const sauvegarderModification = () => {
     const nouveauxItineraires = [...itineraires];
@@ -118,12 +116,10 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     setDialogueOuvert(false);
   };
 
-  const supprimerLivraison = (livraison: PointLivraison, indexCoursier: number) => {
+  const supprimerLivraison = async (livraison: PointLivraison, indexCoursier: number) => {
+    setActionEnCours(true);
     const nouveauxItineraires = [...itineraires];
-
     avantMiseAJourItineraires();
-
-
     onChangementItineraires(nouveauxItineraires);
 
     // Retirer la livraison de son itinéraire actuel
@@ -134,10 +130,10 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
 
     supprimerDansXmlOuAjoutees(livraison);
     onChangementItineraires(nouveauxItineraires);
-    miseAJourPlusCourtCheminAPI();
+    await miseAJourPlusCourtCheminAPI();
+    setActionEnCours(false);
   };
 
-  // Fonction pour supprimer une livraison dans les adresses ajoutées ou dans le XML (si elle y était)
   const supprimerDansXmlOuAjoutees = (livraison: PointLivraison) => {
     const indexXML = adressesLivraisonsXml.findIndex((adresse) => adresse.id === livraison.intersection.id);
     if (indexXML !== -1) {
@@ -157,10 +153,9 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
   const annulerDerniereAction = () => {
     if (historique.length > 0) {
       const newHistory = [...historique];
-      const actionAnnulee = newHistory.pop()!; // L'action qu'on annule
+      const actionAnnulee = newHistory.pop()!;
       const previousState = deepCopy(itineraires);
-      console.log("je push sur annule : ", deepCopy(previousState))
-      setHistoriqueAnnule([...historiqueAnnule, deepCopy(previousState)]); // On la sauvegarde
+      setHistoriqueAnnule([...historiqueAnnule, deepCopy(previousState)]);
       setHistorique(newHistory);
       onChangementItineraires(deepCopy(actionAnnulee));
       setEstModifie(true);
@@ -181,45 +176,44 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
   const avantMiseAJourItineraires = () => {
     const deepCopyItineraires = deepCopy(itineraires);
     setHistorique([...historique, deepCopyItineraires]);
-
     setEstModifie(true);
     setHistoriqueAnnule([]);
   }
 
-  const miseAJourPlusCourtCheminAPI = (nouveauxItineraires = itineraires) => {
-    const itinerairesOrdonnes = {
-      livraisons: nouveauxItineraires.map(itineraire => ({
-        cheminIntersections: itineraire.cheminIntersections || [],
-        livraisons: {
-          entrepot: {
-            heureDepart: "08:00:00",
-            intersection: itineraire.livraisons.entrepot.intersection
-          },
-          livraisons: [
-            ...itineraire.livraisons.livraisons.map(livraison => ({
-              intersection: livraison.intersection
-            }))
-          ],
-          coursier: null
-        }
-      }))
-    };
-    calculerItineraireOrdonne(itinerairesOrdonnes)
-      .then(response => {
-        const itineraires: Itineraire[] = response.data.livraisons.map((itineraire: any) => ({
+  const miseAJourPlusCourtCheminAPI = async (nouveauxItineraires = itineraires) => {
+    try {
+      const itinerairesOrdonnes = {
+        livraisons: nouveauxItineraires.map(itineraire => ({
+          cheminIntersections: itineraire.cheminIntersections || [],
           livraisons: {
-            entrepot: itineraire.livraisons.entrepot,
-            livraisons: itineraire.livraisons.livraisons,
-            coursier: itineraire.livraisons.coursier
-          },
-          cheminIntersections: itineraire.cheminIntersections
-        }));
-        onChangementItineraires(itineraires);
-      })
-      .catch(error => {
-        console.error("Erreur lors du calcul de l'itinéraire :", error);
-      });
-    setEstModifie(false);
+            entrepot: {
+              heureDepart: "08:00:00",
+              intersection: itineraire.livraisons.entrepot.intersection
+            },
+            livraisons: [
+              ...itineraire.livraisons.livraisons.map(livraison => ({
+                intersection: livraison.intersection
+              }))
+            ],
+            coursier: null
+          }
+        }))
+      };
+      const response = await calculerItineraireOrdonne(itinerairesOrdonnes);
+      const itineraires: Itineraire[] = response.data.livraisons.map((itineraire: any) => ({
+        livraisons: {
+          entrepot: itineraire.livraisons.entrepot,
+          livraisons: itineraire.livraisons.livraisons,
+          coursier: itineraire.livraisons.coursier
+        },
+        cheminIntersections: itineraire.cheminIntersections
+      }));
+      onChangementItineraires(itineraires);
+    } catch (error) {
+      console.error("Erreur lors du calcul de l'itinéraire :", error);
+    } finally {
+      setEstModifie(false);
+    }
   };
 
   const gererSelectionItineraire = (index: number) => {
@@ -230,7 +224,8 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     }
   };
 
-  function ajouterLivraison(indexCoursier: number, indexLivraison: number) {
+  const ajouterLivraison = (indexCoursier: number, indexLivraison: number) => {
+    setActionEnCours(true);
     avantMiseAJourItineraires();
 
     toast(<p>Cliquez sur une intersection de la carte pour ajouter une livraison au <b>coursier n°{indexCoursier + 1}</b></p>, {
@@ -245,17 +240,39 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     const livraisonAjouteePourCoursier = {
       numeroCoursier: indexCoursier,
       indexLivraison: indexLivraison,
-      intersection: null // pour l'instant, on ne sait pas quelle intersection ajouter
+      intersection: null
     }
 
     setLivraisonAjouteePourCoursier(livraisonAjouteePourCoursier);
-  }
+  };
+
+  const deplacerLivraison = async (indexCoursier: number, indexLivraison: number, direction: 'up' | 'down') => {
+    setActionEnCours(true);
+    const nouveauxItineraires = deepCopy(itineraires);
+    const livraisons = nouveauxItineraires[indexCoursier].livraisons.livraisons;
+
+    if (indexLivraison <= 0 || indexLivraison >= livraisons.length - 1) {
+      setActionEnCours(false);
+      return;
+    }
+    if ((direction === 'up' && indexLivraison <= 1) ||
+      (direction === 'down' && indexLivraison >= livraisons.length - 2)) {
+      setActionEnCours(false);
+      return;
+    }
+
+    const nouvelIndex = direction === 'up' ? indexLivraison - 1 : indexLivraison + 1;
+    avantMiseAJourItineraires();
+    [livraisons[indexLivraison], livraisons[nouvelIndex]] =
+      [livraisons[nouvelIndex], livraisons[indexLivraison]];
+
+    await miseAJourPlusCourtCheminAPI(nouveauxItineraires);
+    setActionEnCours(false);
+  };
 
   useEffect(() => {
     if (livraisonAjouteePourCoursier?.intersection) {
-      // ajouter la livraison à l'itinéraire (grâce à l'index de la livraison et du coursier)
       const nouveauxItineraires = [...itineraires];
-
       const intersectionSansVoisins = {
         id: livraisonAjouteePourCoursier.intersection.id,
         latitude: livraisonAjouteePourCoursier.intersection.latitude,
@@ -271,36 +288,31 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
         heureArrivee: "00:00:00",
       }
 
-      // Récupération de l'itinéraire du coursier
       const itineraireCoursier = nouveauxItineraires[livraisonAjouteePourCoursier.numeroCoursier];
       itineraireCoursier.livraisons.livraisons.splice(livraisonAjouteePourCoursier.indexLivraison + 1, 0, livraiseAAjouter);
 
       onChangementItineraires(nouveauxItineraires);
-      miseAJourPlusCourtCheminAPI();
+      miseAJourPlusCourtCheminAPI().finally(() => {
+        setActionEnCours(false);
+      });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [livraisonAjouteePourCoursier]);
 
   useEffect(() => {
     if (itineraires.length > 0) {
-      // Récupérer toutes les adresses des itinéraires
       const adressesDesItineraires = new Set(
         itineraires.flatMap(itineraire =>
           itineraire.livraisons.livraisons
             .map(livraison => livraison.intersection.id)
         )
       );
-      //Trouve l'id de l'entrepôt
       const idEntrepot = adressesDesItineraires.values().next().value;
 
-      // Mettre à jour adressesLivraisonsXml et ajouter les nouvelles adresses
       setAdressesLivraisonsXml(prev => {
-        // Filtrer les adresses qui ne sont plus dans les itinéraires
         const adressesExistantes = prev.filter(adresse =>
           adressesDesItineraires.has(adresse.id)
         );
 
-        // Récupérer toutes les nouvelles adresses des itinéraires
         const nouvellesAdresses = itineraires.flatMap(itineraire =>
           itineraire.livraisons.livraisons
             .filter(livraison => !prev.some(addr => addr.id === livraison.intersection.id) && livraison.intersection.id !== idEntrepot)
@@ -316,37 +328,12 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
         return [...adressesExistantes, ...nouvellesAdresses];
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itineraires])
 
   const gererClicLivraison = (livraison: any) => {
-    // Zoomer vers la position de la livraison
     zoomerVersPoint(livraison.intersection.latitude, livraison.intersection.longitude);
   };
 
-  const deplacerLivraison = (indexCoursier: number, indexLivraison: number, direction: 'up' | 'down') => {
-    const nouveauxItineraires = deepCopy(itineraires);
-    const livraisons = nouveauxItineraires[indexCoursier].livraisons.livraisons;
-
-    // Ne pas déplacer l'entrepôt ou si on essaie de sortir des limites
-    if (indexLivraison <= 0 || indexLivraison >= livraisons.length - 1) return;
-    if ((direction === 'up' && indexLivraison <= 1) ||
-      (direction === 'down' && indexLivraison >= livraisons.length - 2)) return;
-
-    const nouvelIndex = direction === 'up' ? indexLivraison - 1 : indexLivraison + 1;
-
-    // Sauvegarder l'état actuel dans l'historique
-    avantMiseAJourItineraires();
-
-    // Échanger les positions
-    [livraisons[indexLivraison], livraisons[nouvelIndex]] =
-      [livraisons[nouvelIndex], livraisons[indexLivraison]];
-
-    // Mettre à jour directement via l'API plutôt que de passer par onChangementItineraires
-    miseAJourPlusCourtCheminAPI(nouveauxItineraires);
-  };
-
-  // fonction permettant de créer une clé unique pour chaque livraison
   const genererClefUnique = (livraison: any, indexLivraison: number, nombreTotalLivraisons: number): string => {
     if (indexLivraison === 0) {
       return `entrepot-depart-${livraison.intersection.id}`;
@@ -355,7 +342,6 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
     }
     return `livraison-${livraison.intersection.id}-${indexLivraison}`;
   };
-
 
   return (
     <Box
@@ -374,7 +360,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
       <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
         <Button
           onClick={annulerDerniereAction}
-          disabled={historique.length <= 1}
+          disabled={historique.length <= 1 || actionEnCours}
           variant="outlined"
           startIcon={<UndoIcon />}
           title="Annuler la dernière action"
@@ -382,7 +368,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
 
         <Button
           onClick={retablirDerniereAction}
-          disabled={historiqueAnnule.length === 0}
+          disabled={historiqueAnnule.length === 0 || actionEnCours}
           variant="outlined"
           startIcon={<RedoIcon />}
           title="Rétablir la dernière action"
@@ -390,6 +376,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
 
         <Button
           onClick={genererFichesRoutes}
+          disabled={actionEnCours}
           variant="contained"
         >
           Générer les fiches de routes
@@ -477,7 +464,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                                 e.stopPropagation();
                                 deplacerLivraison(indexCoursier, indexLivraison, 'up');
                               }}
-                              disabled={indexLivraison <= 1}
+                              disabled={indexLivraison <= 1 || actionEnCours}
                               sx={{ padding: '2px' }}
                             >
                               <ArrowUpIcon fontSize="small" />
@@ -488,7 +475,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                                 e.stopPropagation();
                                 deplacerLivraison(indexCoursier, indexLivraison, 'down');
                               }}
-                              disabled={indexLivraison >= itineraire.livraisons.livraisons.length - 2}
+                              disabled={indexLivraison >= itineraire.livraisons.livraisons.length - 2 || actionEnCours}
                               sx={{ padding: '2px' }}
                             >
                               <ArrowDownIcon fontSize="small" />
@@ -532,8 +519,9 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                                 e.stopPropagation();
                                 supprimerLivraison(livraison, indexCoursier);
                               }}
+                              disabled={actionEnCours}
                             >
-                              <DeleteIcon color="error" />
+                              <DeleteIcon color={!actionEnCours ? "error" : "disabled"} />
                             </IconButton>
                           )}
                           {!estDernierEntrepot && (
@@ -543,6 +531,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
                                 e.stopPropagation();
                                 ajouterLivraison(indexCoursier, indexLivraison);
                               }}
+                              disabled={actionEnCours}
                             >
                               <AddIcon />
                             </IconButton>
@@ -566,6 +555,7 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
             <Select
               value={coursierSelectionne}
               onChange={(e) => setCoursierSelectionne(e.target.value as number)}
+              disabled={actionEnCours}
             >
               {itineraires.map((_, index) => (
                 <MenuItem key={index} value={index}>
@@ -576,8 +566,8 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
           </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogueOuvert(false)}>Annuler</Button>
-          <Button onClick={sauvegarderModification} variant="contained">
+          <Button onClick={() => setDialogueOuvert(false)} disabled={actionEnCours}>Annuler</Button>
+          <Button onClick={sauvegarderModification} variant="contained" disabled={actionEnCours}>
             Sauvegarder
           </Button>
         </DialogActions>
