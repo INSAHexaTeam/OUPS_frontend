@@ -6,7 +6,7 @@ export async function calculerItineraireOrdonneOpti(
 ): Promise<{ message: string, data: Blob }> {
   return new Promise(async (resolve, reject) => {
     try {
-      const req = await fetch(`http://localhost:8080/carte/calculerItineraireOrdonne/${coursierId}`, {
+      const req = await fetch(`http://localhost:8080/carte/calculerItineraireOrdonneOpti/${coursierId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

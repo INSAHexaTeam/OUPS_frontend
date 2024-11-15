@@ -186,40 +186,43 @@ const GestionnaireItineraire: React.FC<GestionnaireItineraireProps> = ({
         setHistoriqueAnnule([]);
     }
 
-    const miseAJourPlusCourtCheminAPI = (nouveauxItineraires = itineraires) => {
-        const itinerairesOrdonnes = {
-            livraisons: nouveauxItineraires.map(itineraire => ({
-                cheminIntersections: itineraire.cheminIntersections || [],
-                livraisons: {
-                    entrepot: {
-                        heureDepart: "08:00:00",
-                        intersection: itineraire.livraisons.entrepot.intersection
-                    },
-                    livraisons: [
-                        ...itineraire.livraisons.livraisons.map(livraison => ({
-                            intersection: livraison.intersection
-                        }))
-                    ],
-                    coursier: null
-                }
-            }))
-        };
-        calculerItineraireOrdonne(itinerairesOrdonnes)
-            .then(response => {
-                const itineraires: Itineraire[] = response.data.livraisons.map((itineraire: any) => ({
+    const miseAJourPlusCourtCheminAPI = (coursierId:number,nouveauxItineraires = itineraires) => {
+        try{
+            const itinerairesOrdonnes = {
+                livraisons: nouveauxItineraires.map(itineraire => ({
+                    cheminIntersections: itineraire.cheminIntersections || [],
                     livraisons: {
-                        entrepot: itineraire.livraisons.entrepot,
-                        livraisons: itineraire.livraisons.livraisons,
-                        coursier: itineraire.livraisons.coursier
-                    },
-                    cheminIntersections: itineraire.cheminIntersections
-                }));
-                onChangementItineraires(itineraires);
-            })
-            .catch(error => {
-                console.error("Erreur lors du calcul de l'itinéraire :", error);
-            });
-        setEstModifie(false);
+                        entrepot: {
+                            heureDepart: "08:00:00",
+                            intersection: itineraire.livraisons.entrepot.intersection
+                        },
+                        livraisons: [
+                            ...itineraire.livraisons.livraisons.map(livraison => ({
+                                intersection: livraison.intersection
+                            }))
+                        ],
+                        coursier: null
+                    }
+                }))
+            };
+            calculerItineraireOrdonneOpti(itinerairesOrdonnes, coursierId)
+                .then(response => {
+                    console.log("je reçois : ", response.data)
+                    const nouveauxItineraires = [...itineraires];
+                    nouveauxItineraires[coursierId] = response.data
+                    console.log("nouvel api : ", nouveauxItineraires)
+                    onChangementItineraires(nouveauxItineraires);
+                })
+                .catch(error => {
+                    console.error("Erreur lors du calcul de l'itinéraire :", error);
+                });
+            setEstModifie(false);
+        }
+        catch (error: any) {
+            console.error("Erreur lors de la mise à jour de l'itinéraire :", error);
+            toast.error("Erreur lors de la mise à jour de l'itinéraire")
+        }
+        
     };
 
     const gererSelectionItineraire = (index: number) => {
