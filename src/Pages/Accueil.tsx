@@ -1,5 +1,4 @@
 import React, { useState, useEffect, ChangeEvent, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import '../Styles/Accueil.css';
 import Carte from './Carte.tsx';
 import { Intersection, Itineraire, Point } from '../Utils/points.tsx';
